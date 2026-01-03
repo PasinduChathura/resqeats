@@ -1,0 +1,1367 @@
+{
+  "info": {
+    "_postman_id": "resqeats-api-collection",
+    "name": "Resqeats Food Rescue API",
+    "description": "Complete API collection for Resqeats - Food Rescue Platform",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8089/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "shopId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "boxId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "cartId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "orderId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "orderNumber",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Sign Up - Customer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('accessToken', jsonData.accessToken);",
+                  "    pm.collectionVariables.set('refreshToken', jsonData.refreshToken);",
+                  "    pm.collectionVariables.set('userId', jsonData.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"customer1\",\n    \"email\": \"customer1@example.com\",\n    \"password\": \"Test@123\",\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\",\n    \"phoneNumber\": \"+1234567890\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/signup",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "signup"]
+            }
+          }
+        },
+        {
+          "name": "Sign Up - Shop Owner",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('accessToken', jsonData.accessToken);",
+                  "    pm.collectionVariables.set('refreshToken', jsonData.refreshToken);",
+                  "    pm.collectionVariables.set('userId', jsonData.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"shopowner1\",\n    \"email\": \"shopowner1@example.com\",\n    \"password\": \"Test@123\",\n    \"firstName\": \"Jane\",\n    \"lastName\": \"Smith\",\n    \"phoneNumber\": \"+1234567891\",\n    \"type\": \"SHOP_OWNER\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/signup",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "signup"]
+            }
+          }
+        },
+        {
+          "name": "Sign In",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('accessToken', jsonData.accessToken);",
+                  "    pm.collectionVariables.set('refreshToken', jsonData.refreshToken);",
+                  "    pm.collectionVariables.set('userId', jsonData.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"customer1\",\n    \"password\": \"Test@123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/signin",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "signin"]
+            }
+          }
+        },
+        {
+          "name": "Sign In - Shop Owner",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('accessToken', jsonData.accessToken);",
+                  "    pm.collectionVariables.set('refreshToken', jsonData.refreshToken);",
+                  "    pm.collectionVariables.set('userId', jsonData.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"shopowner1\",\n    \"password\": \"Test@123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/signin",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "signin"]
+            }
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('accessToken', jsonData.accessToken);",
+                  "    pm.collectionVariables.set('refreshToken', jsonData.refreshToken);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/refreshToken",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "refreshToken"]
+            }
+          }
+        },
+        {
+          "name": "Request Password Reset",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"customer1@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/resetPassword/mail",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "resetPassword", "mail"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Shop Management",
+      "item": [
+        {
+          "name": "Register Shop",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('shopId', jsonData.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Green Bakery\",\n    \"description\": \"Artisan bakery with fresh daily products\",\n    \"businessType\": \"BAKERY\",\n    \"address\": \"123 Main Street\",\n    \"city\": \"New York\",\n    \"state\": \"NY\",\n    \"postalCode\": \"10001\",\n    \"country\": \"USA\",\n    \"latitude\": 40.7128,\n    \"longitude\": -74.0060,\n    \"phoneNumber\": \"+1234567892\",\n    \"email\": \"greenbakery@example.com\",\n    \"website\": \"https://greenbakery.example.com\",\n    \"logoUrl\": \"https://example.com/logo.png\",\n    \"coverImageUrl\": \"https://example.com/cover.png\",\n    \"operatingDays\": [\n        {\n            \"dayOfWeek\": \"MONDAY\",\n            \"openTime\": \"08:00\",\n            \"closeTime\": \"20:00\",\n            \"pickupStartTime\": \"18:00\",\n            \"pickupEndTime\": \"20:00\",\n            \"isOpen\": true\n        },\n        {\n            \"dayOfWeek\": \"TUESDAY\",\n            \"openTime\": \"08:00\",\n            \"closeTime\": \"20:00\",\n            \"pickupStartTime\": \"18:00\",\n            \"pickupEndTime\": \"20:00\",\n            \"isOpen\": true\n        },\n        {\n            \"dayOfWeek\": \"WEDNESDAY\",\n            \"openTime\": \"08:00\",\n            \"closeTime\": \"20:00\",\n            \"pickupStartTime\": \"18:00\",\n            \"pickupEndTime\": \"20:00\",\n            \"isOpen\": true\n        },\n        {\n            \"dayOfWeek\": \"THURSDAY\",\n            \"openTime\": \"08:00\",\n            \"closeTime\": \"20:00\",\n            \"pickupStartTime\": \"18:00\",\n            \"pickupEndTime\": \"20:00\",\n            \"isOpen\": true\n        },\n        {\n            \"dayOfWeek\": \"FRIDAY\",\n            \"openTime\": \"08:00\",\n            \"closeTime\": \"21:00\",\n            \"pickupStartTime\": \"18:00\",\n            \"pickupEndTime\": \"21:00\",\n            \"isOpen\": true\n        },\n        {\n            \"dayOfWeek\": \"SATURDAY\",\n            \"openTime\": \"09:00\",\n            \"closeTime\": \"18:00\",\n            \"pickupStartTime\": \"16:00\",\n            \"pickupEndTime\": \"18:00\",\n            \"isOpen\": true\n        },\n        {\n            \"dayOfWeek\": \"SUNDAY\",\n            \"openTime\": \"10:00\",\n            \"closeTime\": \"16:00\",\n            \"pickupStartTime\": \"14:00\",\n            \"pickupEndTime\": \"16:00\",\n            \"isOpen\": false\n        }\n    ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/shops/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "shops", "register"]
+            }
+          }
+        },
+        {
+          "name": "Get My Shop",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/shops/my-shop",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "shops", "my-shop"]
+            }
+          }
+        },
+        {
+          "name": "Update Shop",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Green Bakery - Updated\",\n    \"description\": \"Premium artisan bakery with organic products\",\n    \"businessType\": \"BAKERY\",\n    \"address\": \"123 Main Street\",\n    \"city\": \"New York\",\n    \"state\": \"NY\",\n    \"postalCode\": \"10001\",\n    \"country\": \"USA\",\n    \"latitude\": 40.7128,\n    \"longitude\": -74.0060,\n    \"phoneNumber\": \"+1234567892\",\n    \"email\": \"greenbakery@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/shops/{{shopId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "shops", "{{shopId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Shop by ID (Public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/shops/{{shopId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "shops", "{{shopId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Nearby Shops (Public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/shops/nearby?latitude=40.7128&longitude=-74.0060&radiusKm=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "shops", "nearby"],
+              "query": [
+                {
+                  "key": "latitude",
+                  "value": "40.7128"
+                },
+                {
+                  "key": "longitude",
+                  "value": "-74.0060"
+                },
+                {
+                  "key": "radiusKm",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Shop Status (Open/Close)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/shops/{{shopId}}/status?isOpen=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "shops", "{{shopId}}", "status"],
+              "query": [
+                {
+                  "key": "isOpen",
+                  "value": "true"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Shop Statistics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/shops/{{shopId}}/statistics",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "shops", "{{shopId}}", "statistics"]
+            }
+          }
+        },
+        {
+          "name": "Get Shop Secret Boxes (Public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/shops/{{shopId}}/boxes",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "shops", "{{shopId}}", "boxes"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Secret Box Management",
+      "item": [
+        {
+          "name": "Create Secret Box",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('boxId', jsonData.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Bakery Surprise Box\",\n    \"description\": \"A mix of our daily fresh baked goods including bread, pastries, and cookies\",\n    \"boxType\": \"MIXED\",\n    \"originalPrice\": 25.00,\n    \"discountedPrice\": 9.99,\n    \"quantity\": 10,\n    \"imageUrl\": \"https://example.com/box.png\",\n    \"pickupStartTime\": \"18:00\",\n    \"pickupEndTime\": \"20:00\",\n    \"allergens\": [\"GLUTEN\", \"DAIRY\", \"EGGS\"],\n    \"dietaryInfo\": [\"VEGETARIAN\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/secret-boxes",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "secret-boxes"]
+            }
+          }
+        },
+        {
+          "name": "Update Secret Box",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Bakery Surprise Box - Large\",\n    \"description\": \"An even bigger mix of our daily fresh baked goods\",\n    \"boxType\": \"MIXED\",\n    \"originalPrice\": 35.00,\n    \"discountedPrice\": 12.99,\n    \"quantity\": 15,\n    \"imageUrl\": \"https://example.com/box-large.png\",\n    \"pickupStartTime\": \"17:00\",\n    \"pickupEndTime\": \"20:00\",\n    \"allergens\": [\"GLUTEN\", \"DAIRY\", \"EGGS\"],\n    \"dietaryInfo\": [\"VEGETARIAN\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/secret-boxes/{{boxId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "secret-boxes", "{{boxId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Secret Box by ID (Public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/secret-boxes/{{boxId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "secret-boxes", "{{boxId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Nearby Secret Boxes (Public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/secret-boxes/nearby?latitude=40.7128&longitude=-74.0060&radiusKm=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "secret-boxes", "nearby"],
+              "query": [
+                {
+                  "key": "latitude",
+                  "value": "40.7128"
+                },
+                {
+                  "key": "longitude",
+                  "value": "-74.0060"
+                },
+                {
+                  "key": "radiusKm",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get My Shop's Secret Boxes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/secret-boxes/my-boxes",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "secret-boxes", "my-boxes"]
+            }
+          }
+        },
+        {
+          "name": "Update Box Quantity",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/secret-boxes/{{boxId}}/quantity?quantity=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "secret-boxes", "{{boxId}}", "quantity"],
+              "query": [
+                {
+                  "key": "quantity",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Secret Box",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/secret-boxes/{{boxId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "secret-boxes", "{{boxId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cart Management",
+      "item": [
+        {
+          "name": "Get My Cart",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.id) {",
+                  "        pm.collectionVariables.set('cartId', jsonData.id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cart",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cart"]
+            }
+          }
+        },
+        {
+          "name": "Add Item to Cart",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('cartId', jsonData.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"secretBoxId\": {{boxId}},\n    \"quantity\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/cart/items",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cart", "items"]
+            }
+          }
+        },
+        {
+          "name": "Update Cart Item Quantity",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"secretBoxId\": {{boxId}},\n    \"quantity\": 3\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/cart/items",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cart", "items"]
+            }
+          }
+        },
+        {
+          "name": "Remove Item from Cart",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cart/items/{{boxId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cart", "items", "{{boxId}}"]
+            }
+          }
+        },
+        {
+          "name": "Clear Cart",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cart",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cart"]
+            }
+          }
+        },
+        {
+          "name": "Validate Cart",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cart/validate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cart", "validate"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Order Management",
+      "item": [
+        {
+          "name": "Create Order from Cart",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('orderId', jsonData.id);",
+                  "    pm.collectionVariables.set('orderNumber', jsonData.orderNumber);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"paymentMethodId\": 1,\n    \"specialInstructions\": \"Please pack items separately\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/orders",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "orders"]
+            }
+          }
+        },
+        {
+          "name": "Get My Orders",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/orders/my-orders?page=0&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "orders", "my-orders"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Order by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/orders/{{orderId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "orders", "{{orderId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Order by Order Number",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/orders/number/{{orderNumber}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "orders", "number", "{{orderNumber}}"]
+            }
+          }
+        },
+        {
+          "name": "Cancel Order (Customer)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/orders/{{orderId}}/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "orders", "{{orderId}}", "cancel"]
+            }
+          }
+        },
+        {
+          "name": "Get Shop Orders (Shop Owner)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/orders/shop?page=0&size=10&status=PENDING_SHOP_ACCEPTANCE",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "orders", "shop"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                },
+                {
+                  "key": "status",
+                  "value": "PENDING_SHOP_ACCEPTANCE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Accept Order (Shop Owner)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"estimatedPrepTimeMinutes\": 30\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/orders/{{orderId}}/accept",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "orders", "{{orderId}}", "accept"]
+            }
+          }
+        },
+        {
+          "name": "Decline Order (Shop Owner)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"reason\": \"Items no longer available\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/orders/{{orderId}}/decline",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "orders", "{{orderId}}", "decline"]
+            }
+          }
+        },
+        {
+          "name": "Mark Order Ready for Pickup (Shop Owner)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/orders/{{orderId}}/ready",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "orders", "{{orderId}}", "ready"]
+            }
+          }
+        },
+        {
+          "name": "Complete Pickup (Shop Owner)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/orders/{{orderId}}/complete",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "orders", "{{orderId}}", "complete"]
+            }
+          }
+        },
+        {
+          "name": "Get Active Shop Orders (Shop Owner)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/orders/shop/active",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "orders", "shop", "active"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payment Management",
+      "item": [
+        {
+          "name": "Get My Payment Methods",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/payment-methods",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payment-methods"]
+            }
+          }
+        },
+        {
+          "name": "Add Payment Method",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"type\": \"CARD\",\n    \"cardLast4\": \"4242\",\n    \"cardBrand\": \"VISA\",\n    \"expiryMonth\": 12,\n    \"expiryYear\": 2028,\n    \"isDefault\": true,\n    \"stripePaymentMethodId\": \"pm_card_visa\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/payment-methods",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payment-methods"]
+            }
+          }
+        },
+        {
+          "name": "Set Default Payment Method",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/payment-methods/1/default",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payment-methods", "1", "default"]
+            }
+          }
+        },
+        {
+          "name": "Delete Payment Method",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/payment-methods/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payment-methods", "1"]
+            }
+          }
+        },
+        {
+          "name": "Get Payment by Order ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/order/{{orderId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payments", "order", "{{orderId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "item": [
+        {
+          "name": "Get My Notifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications?page=0&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "notifications"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Unread Notification Count",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/unread-count",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "notifications", "unread-count"]
+            }
+          }
+        },
+        {
+          "name": "Mark Notification as Read",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/1/read",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "notifications", "1", "read"]
+            }
+          }
+        },
+        {
+          "name": "Mark All Notifications as Read",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/read-all",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "notifications", "read-all"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "User Management",
+      "item": [
+        {
+          "name": "Get All Users (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user",
+              "host": ["{{baseUrl}}"],
+              "path": ["user"]
+            }
+          }
+        },
+        {
+          "name": "Get User by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "{{userId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"firstName\": \"John\",\n    \"lastName\": \"Updated\",\n    \"phoneNumber\": \"+1234567899\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/user/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "{{userId}}"]
+            }
+          }
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"oldPassword\": \"Test@123\",\n    \"newPassword\": \"NewTest@123\",\n    \"confirmPassword\": \"NewTest@123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/user/changePassword",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "changePassword"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Role Management (Admin)",
+      "item": [
+        {
+          "name": "Get All Roles",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/role",
+              "host": ["{{baseUrl}}"],
+              "path": ["role"]
+            }
+          }
+        },
+        {
+          "name": "Create Role",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"MODERATOR\",\n    \"description\": \"Moderator role with limited admin privileges\",\n    \"type\": \"ADMIN\",\n    \"privileges\": [\"1\", \"2\", \"3\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/role",
+              "host": ["{{baseUrl}}"],
+              "path": ["role"]
+            }
+          }
+        },
+        {
+          "name": "Get Role by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/role/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["role", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "WebSocket Test",
+      "item": [
+        {
+          "name": "WebSocket Connection Info",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/test/ws-info",
+              "host": ["{{baseUrl}}"],
+              "path": ["test", "ws-info"]
+            },
+            "description": "WebSocket endpoint: ws://localhost:8089/api/v1/ws\n\nSubscribe to:\n- /user/queue/notifications - Personal notifications\n- /topic/orders/{shopId} - Shop order updates\n\nSend to:\n- /app/ping - Test connection"
+          }
+        }
+      ]
+    }
+  ]
+}

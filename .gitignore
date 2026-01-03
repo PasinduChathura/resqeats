@@ -1,0 +1,18 @@
+# Maven
+target/
+
+# Logs
+logs/
+*.log
+*.log.*
+
+# IntelliJ / IDE
+.idea/
+*.iml
+
+# OS
+Thumbs.db
+Desktop.ini
+
+# Env
+.env

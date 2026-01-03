@@ -1,0 +1,167 @@
+# ================================================================================
+# Resqeats Production Profile Configuration
+# ================================================================================
+# Production environment - all sensitive values must come from environment variables.
+# Never commit actual secrets to this file.
+#
+# Required Environment Variables:
+#   - DB_URL, DB_USERNAME, DB_PASSWORD
+#   - REDIS_HOST, REDIS_PASSWORD
+#   - MAIL_HOST, MAIL_USERNAME, MAIL_PASSWORD
+#   - JWT_SECRET (Base64 encoded, 512+ bits for HS512)
+#   - GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, OAUTH2_REDIRECT_URI
+#   - PAYMENT_WEBHOOK_SECRET
+#
+# Usage: java -jar app.jar --spring.profiles.active=prod
+# ================================================================================
+
+spring:
+  application:
+    name: resqeats-backend
+
+  config:
+    activate:
+      on-profile: prod
+
+  # ==================== Database Configuration ====================
+  datasource:
+    url: ${DB_URL:?DB_URL is required}
+    username: ${DB_USERNAME:?DB_USERNAME is required}
+    password: ${DB_PASSWORD:?DB_PASSWORD is required}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 3
+      idle-timeout: 300000
+      connection-timeout: 20000
+      max-lifetime: 1200000
+      leak-detection-threshold: 60000
+      pool-name: ResqeatsHikariPool
+
+  # ==================== JPA Configuration ====================
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    open-in-view: false
+    properties:
+      hibernate:
+        generate_statistics: false
+
+  # ==================== Redis Configuration ====================
+  data:
+    redis:
+      host: ${REDIS_HOST:?REDIS_HOST is required}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 60000
+
+  # ==================== Mail Configuration ====================
+  mail:
+    host: ${MAIL_HOST:?MAIL_HOST is required}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:?MAIL_USERNAME is required}
+    password: ${MAIL_PASSWORD:?MAIL_PASSWORD is required}
+    protocol: smtp
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+  # ==================== OAuth2 Configuration ====================
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID:?GOOGLE_CLIENT_ID is required}
+            client-secret: ${GOOGLE_CLIENT_SECRET:?GOOGLE_CLIENT_SECRET is required}
+            scope: profile,email
+            redirect-uri: ${OAUTH2_REDIRECT_URI:?OAUTH2_REDIRECT_URI is required}
+
+# ==================== Server Configuration ====================
+server:
+  port: ${SERVER_PORT:8089}
+  servlet:
+    context-path: /api/v1
+    session:
+      cookie:
+        secure: true
+        same-site: strict
+  tomcat:
+    threads:
+      max: 200
+      min-spare: 10
+
+# ==================== Application Configuration ====================
+resqeats:
+  app:
+    # JWT Configuration (must be Base64 encoded for HS512)
+    jwtSecret: ${JWT_SECRET:?JWT_SECRET is required}
+    # Access token: 15 minutes
+    jwtExpirationMs: 900000
+    # Refresh token: 30 days
+    refreshTokenExpirationMs: 2592000000
+
+  # Rate Limiting
+  ratelimit:
+    enabled: true
+    general:
+      requests-per-minute: 60
+    auth:
+      requests-per-minute: 5
+    trust-proxy-headers: false
+
+  # Cart expiry (minutes)
+  cart:
+    expiry-minutes: 10
+
+  # Order settings
+  order:
+    outlet-response-timeout-minutes: 15
+    pickup-window-minutes: 60
+    service-fee: 0.99
+
+  # Outlet search
+  outlet:
+    default-search-radius-km: 5.0
+    max-search-radius-km: 50.0
+
+# ==================== Payment Configuration ====================
+payment:
+  webhook:
+    secret: ${PAYMENT_WEBHOOK_SECRET:?PAYMENT_WEBHOOK_SECRET is required}
+
+# ==================== OAuth2 Redirect ====================
+app:
+  oauth2:
+    authorizedRedirectUri: ${APP_REDIRECT_URI:?APP_REDIRECT_URI is required}
+
+# ==================== Logging Configuration ====================
+logging:
+  level:
+    root: WARN
+    com.ffms.resqeats: INFO
+    org.springframework.security: ERROR
+    org.hibernate: ERROR
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{correlationId:-}] %-5level %logger{36} - %msg%n"
+
+# ==================== Management/Actuator Configuration ====================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+
+# ==================== Swagger/OpenAPI (Disabled in Production) ====================
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false

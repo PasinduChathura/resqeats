@@ -1,0 +1,175 @@
+# ================================================================================
+# Resqeats UAT (User Acceptance Testing) Profile Configuration
+# ================================================================================
+# Pre-production testing environment with mixed configuration.
+# Uses environment variables for secrets, hardcoded values for non-sensitive config.
+#
+# Usage: mvn spring-boot:run -Dspring-boot.run.profiles=uat
+#
+# Required Environment Variables:
+#   DB_PASSWORD            - Database password
+#   REDIS_PASSWORD         - Redis password
+#   JWT_SECRET             - JWT signing secret (Base64 encoded, 512+ bits for HS512)
+#   MAIL_PASSWORD          - SMTP mail password
+#   GOOGLE_CLIENT_ID       - Google OAuth2 client ID
+#   GOOGLE_CLIENT_SECRET   - Google OAuth2 client secret
+#   PAYMENT_WEBHOOK_SECRET - Payment webhook secret
+# ================================================================================
+
+spring:
+  application:
+    name: resqeats-backend
+
+  config:
+    activate:
+      on-profile: uat
+
+  # ==================== Database Configuration ====================
+  datasource:
+    url: jdbc:mysql://uat-db.resqeats.internal:3306/resqeats_uat?useSSL=true&serverTimezone=UTC
+    username: resqeats_uat
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 8
+      minimum-idle: 3
+      idle-timeout: 300000
+      connection-timeout: 20000
+      max-lifetime: 1200000
+      leak-detection-threshold: 60000
+
+  # ==================== JPA Configuration ====================
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    open-in-view: false
+
+  # ==================== Redis Configuration ====================
+  data:
+    redis:
+      host: uat-redis.resqeats.internal
+      port: 6379
+      password: ${REDIS_PASSWORD}
+      timeout: 60000
+
+  # ==================== Mail Configuration ====================
+  mail:
+    host: smtp.resqeats.internal
+    port: 587
+    username: uat-notifications@resqeats.com
+    password: ${MAIL_PASSWORD}
+    protocol: smtp
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+  # ==================== OAuth2 Configuration ====================
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope: profile,email
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+
+# ==================== Server Configuration ====================
+server:
+  port: 8089
+  servlet:
+    context-path: /api/v1
+    session:
+      cookie:
+        secure: true
+        same-site: strict
+  tomcat:
+    threads:
+      max: 100
+      min-spare: 5
+
+# ==================== Application Configuration ====================
+resqeats:
+  app:
+    # JWT Configuration (must be Base64 encoded for HS512)
+    jwtSecret: ${JWT_SECRET}
+    # Access token: 15 minutes
+    jwtExpirationMs: 900000
+    # Refresh token: 30 days
+    refreshTokenExpirationMs: 2592000000
+
+  # Rate Limiting (slightly relaxed for testing)
+  ratelimit:
+    enabled: true
+    general:
+      requests-per-minute: 100
+    auth:
+      requests-per-minute: 10
+    trust-proxy-headers: false
+
+  # Cart expiry (minutes)
+  cart:
+    expiry-minutes: 10
+
+  # Order settings
+  order:
+    outlet-response-timeout-minutes: 15
+    pickup-window-minutes: 60
+    service-fee: 0.99
+
+  # Outlet search
+  outlet:
+    default-search-radius-km: 5.0
+    max-search-radius-km: 50.0
+
+# ==================== Payment Configuration ====================
+payment:
+  webhook:
+    secret: ${PAYMENT_WEBHOOK_SECRET}
+
+# ==================== OAuth2 Redirect ====================
+app:
+  logging:
+    request:
+      enabled: true
+      log-headers: false
+  oauth2:
+    authorizedRedirectUri: https://uat.resqeats.com/oauth2/redirect
+
+# ==================== Swagger/OpenAPI (Enabled for UAT testing) ====================
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+
+# ==================== Logging Configuration ====================
+logging:
+  level:
+    root: INFO
+    com.ffms.resqeats: INFO
+    com.ffms.resqeats.common.logging: INFO
+    com.ffms.resqeats.service: INFO
+    com.ffms.resqeats.controller: INFO
+    com.ffms.resqeats.security: INFO
+    com.ffms.resqeats.exception: INFO
+    org.springframework.security: WARN
+    org.springframework.web: WARN
+    org.hibernate.SQL: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{correlationId:-}] %-5level %logger{36} - %msg%n"
+
+# ==================== Management/Actuator Configuration ====================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+      show-components: when-authorized

@@ -1,0 +1,103 @@
+# ================================================================================
+# Resqeats Development Profile Configuration
+# ================================================================================
+# Local development environment with hardcoded values for convenience.
+# NOT for production use - enables debug logging and development features.
+#
+# Usage: mvn spring-boot:run -Dspring-boot.run.profiles=dev
+# ================================================================================
+
+spring:
+  # ==================== Database Configuration ====================
+  datasource:
+    url: jdbc:mysql://localhost:3306/resqeats?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: root
+    password: root123
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 2
+      idle-timeout: 300000
+      connection-timeout: 20000
+      max-lifetime: 1200000
+      leak-detection-threshold: 60000
+
+  # ==================== JPA Configuration ====================
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+
+  # ==================== Redis Configuration ====================
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: "password"
+      timeout: 60000
+
+  # ==================== Mail Configuration ====================
+  # Use MailHog or similar local mail server for testing
+  mail:
+    username: test@resqeats.com
+    password: test-password
+
+  # ==================== OAuth2 Configuration ====================
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope: profile,email
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+
+# ==================== Application Configuration ====================
+resqeats:
+  app:
+    # JWT secret (Base64 encoded, 512+ bits for HS512)
+    # This is a development-only secret - use secure secret in production
+    jwtSecret: bXlTdXBlclNlY3VyZUp3dFNlY3JldEtleUZvckhTNTEyQWxnb3JpdGhtVGhhdElzRGVmaW5pdGVseUxvbmVFbm91Z2hUb01lZXRUaGU1MTJCaXRSZXF1aXJlbWVudDEyMzQ1
+    # Access token: 15 minutes
+    jwtExpirationMs: 900000
+    # Refresh token: 30 days
+    refreshTokenExpirationMs: 2592000000
+
+# ==================== Swagger/OpenAPI ====================
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+
+# ==================== Logging Configuration (Verbose for Development) ====================
+logging:
+  level:
+    root: INFO
+    com.ffms.resqeats: DEBUG
+    com.ffms.resqeats.common.logging: DEBUG
+    com.ffms.resqeats.service: DEBUG
+    com.ffms.resqeats.controller: DEBUG
+    com.ffms.resqeats.security: DEBUG
+    com.ffms.resqeats.exception: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.web: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+# ==================== Management Configuration ====================
+management:
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+
+# ==================== App-level Configuration ====================
+app:
+  logging:
+    request:
+      enabled: true
+      log-headers: true
+  oauth2:
+    authorizedRedirectUri: ${OAUTH2_REDIRECT_URI:http://localhost:5173/oauth2/redirect}

@@ -57,7 +57,15 @@ spring.security.oauth2.client.registration.google.scope=profile,email
 spring.security.oauth2.client.registration.google.redirect-uri={baseUrl}/login/oauth2/code/{registrationId}
 
 # OAuth2 Frontend Redirect URL (Update this to your frontend URL)
-app.oauth2.authorizedRedirectUri=http://localhost:3000/oauth2/redirect
+app.oauth2.authorizedRedirectUri=http://localhost:5173/oauth2/redirect
+```
+
+Or (recommended) set environment variables instead of committing secrets:
+
+```bash
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+OAUTH2_REDIRECT_URI=http://localhost:5173/oauth2/redirect
 ```
 
 ### 3. Database Changes
@@ -101,7 +109,7 @@ Spring Security handles this internally.
 After successful authentication, the user is redirected to:
 
 ```
-http://localhost:3000/oauth2/redirect?authData=<encoded_jwt_response>&success=true
+http://localhost:5173/oauth2/redirect?authData=<encoded_jwt_response>&success=true
 ```
 
 The `authData` parameter contains a URL-encoded JSON with:
@@ -124,7 +132,7 @@ The `authData` parameter contains a URL-encoded JSON with:
 On authentication failure:
 
 ```
-http://localhost:3000/oauth2/redirect?error=<error_message>
+http://localhost:5173/oauth2/redirect?error=<error_message>
 ```
 
 ## Frontend Integration
@@ -328,7 +336,7 @@ app.oauth2.authorizedRedirectUri=${FRONTEND_URL}/oauth2/redirect
 ## File Structure
 
 ```
-src/main/java/com/ffms/trackable/
+src/main/java/com/ffms/resqeats/
 ├── config/
 │   └── SecurityConfig.java (Updated with OAuth2 configuration)
 ├── controller/

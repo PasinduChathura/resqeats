@@ -1,0 +1,189 @@
+# ================================================================================
+# Resqeats Application Configuration
+# ================================================================================
+# Base configuration shared across all profiles.
+# Profile-specific overrides are in application-{profile}.yml files.
+#
+# Profiles:
+#   dev  - Local development (hardcoded secrets, debug logging)
+#   uat  - User acceptance testing (env vars for secrets, info logging)
+#   prod - Production (env vars required, minimal logging)
+#
+# Usage:
+#   Development: mvn spring-boot:run -Dspring-boot.run.profiles=dev
+#   UAT:         mvn spring-boot:run -Dspring-boot.run.profiles=uat
+#   Production:  java -jar app.jar --spring.profiles.active=prod
+# ================================================================================
+
+spring:
+  application:
+    name: resqeats
+
+  # Active profile (defaults to 'dev' if not specified)
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
+  # ==================== JPA/Hibernate Configuration ====================
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
+    open-in-view: false
+
+  # ==================== Servlet Configuration ====================
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+  # ==================== Session/Cookie Configuration ====================
+  session:
+    cookie:
+      same-site: lax
+      secure: true
+      http-only: true
+
+  # ==================== Mail Configuration ====================
+  mail:
+    default-encoding: UTF-8
+    host: smtp.gmail.com
+    port: 587
+    protocol: smtp
+    test-connection: false
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+  # ==================== Data Web Configuration ====================
+  data:
+    web:
+      pageable:
+        max-page-size: 100
+        default-page-size: 20
+        one-indexed-parameters: false
+
+  # ==================== MVC Configuration ====================
+  mvc:
+    async:
+      request-timeout: 30000
+
+# ==================== Server Configuration ====================
+server:
+  port: ${SERVER_PORT:8089}
+  servlet:
+    context-path: /api/v1
+  tomcat:
+    connection-timeout: 20000
+    max-swallow-size: 2MB
+    max-http-form-post-size: 2MB
+    threads:
+      max: 200
+      min-spare: 10
+
+# ==================== Application-Specific Configuration ====================
+resqeats:
+  app:
+    # JWT Configuration
+    # jwtSecret: MUST be provided by profile (dev/uat/prod)
+    # Access token: 15 minutes
+    jwtExpirationMs: 900000
+    # Refresh token: 30 days
+    refreshTokenExpirationMs: 2592000000
+
+  # Cart Configuration
+  cart:
+    expiry-minutes: 10
+
+  # Order Configuration
+  order:
+    outlet-response-timeout-minutes: 15
+    pickup-window-minutes: 60
+    service-fee: 0.99
+    tax-rate: 0.10
+
+  # Outlet Search Configuration (SRS Section 6.8)
+  outlet:
+    default-search-radius-km: 5.0
+    max-search-radius-km: 50.0
+
+  # File Upload Configuration
+  upload:
+    path: uploads/
+
+  # Rate Limiting Configuration (SRS Section 13)
+  ratelimit:
+    enabled: true
+    general:
+      requests-per-minute: 100
+    auth:
+      requests-per-minute: 10
+    trust-proxy-headers: false
+
+# ==================== Scheduled Tasks ====================
+purge:
+  cron:
+    expression: "0 0 2 * * ?" # Run at 2 AM daily
+
+# ==================== OpenAPI/Swagger Configuration ====================
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+  packages-to-scan: com.ffms.resqeats
+  show-actuator: false
+
+# ==================== Management/Actuator Configuration ====================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: never
+      show-components: never
+  health:
+    redis:
+      enabled: true
+    db:
+      enabled: true
+
+# ==================== Logging Configuration ====================
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{correlationId:-}] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{correlationId:-}] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/resqeats.log
+    path: logs
+  logback:
+    rollingpolicy:
+      max-file-size: 10MB
+      max-history: 30
+      total-size-cap: 1GB
+
+# ==================== Request Logging Configuration ====================
+app:
+  logging:
+    request:
+      enabled: true
+      log-headers: false
+      exclude-patterns: /actuator/**,/swagger-ui/**
+  oauth2:
+    authorizedRedirectUri: ${OAUTH2_REDIRECT_URI:http://localhost:5173/oauth2/redirect}
+
+# ==================== Payment Webhook Configuration ====================
+payment:
+  webhook:
+    secret: ${PAYMENT_WEBHOOK_SECRET:}
