@@ -1,9 +1,8 @@
 package com.ffms.resqeats.dto.security;
 
-import com.ffms.resqeats.validation.usermgt.annotations.PasswordMatches;
+import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 
-@PasswordMatches
 @Getter
 @Setter
 @NoArgsConstructor
@@ -11,5 +10,6 @@ import lombok.*;
 @Builder
 public class RefreshTokenDto {
 
+    @NotBlank(message = "Refresh token is required")
     private String token;
 }

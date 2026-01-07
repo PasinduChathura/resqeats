@@ -2,9 +2,9 @@ package com.ffms.resqeats.security.oauth2;
 
 import com.ffms.resqeats.dto.security.JwtResponse;
 import com.ffms.resqeats.jwt.JwtUtils;
-import com.ffms.resqeats.models.security.RefreshToken;
+import com.ffms.resqeats.auth.entity.RefreshToken;
+import com.ffms.resqeats.auth.service.RefreshTokenService;
 import com.ffms.resqeats.security.CustomUserDetails;
-import com.ffms.resqeats.service.security.RefreshTokenService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -24,7 +24,7 @@ import java.util.List;
 
 /**
  * Handles successful Google OAuth2 authentication.
- * Generates JWT tokens and redirects to frontend with auth data.
+ * Per SRS Section 4.2 (FR-U-009): Generates JWT tokens after OAuth2 success.
  */
 @Component
 @Slf4j
@@ -60,7 +60,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
             String accessToken = jwtUtils.generateJwtToken(authentication);
             
             // Create refresh token
-            RefreshToken refreshToken = refreshTokenService.createRefreshTokenForUser(userDetails.getUsername());
+            RefreshToken refreshToken = refreshTokenService.createRefreshTokenForUser(userDetails.getId());
 
             // Get user authorities
             List<String> authorities = userDetails.getAuthorities().stream()

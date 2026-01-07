@@ -1,134 +1,105 @@
 package com.ffms.resqeats.security;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
+import java.util.*;
 
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 
-import com.ffms.resqeats.models.usermgt.User;
+import com.ffms.resqeats.user.entity.User;
+import com.ffms.resqeats.user.enums.UserStatus;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+/**
+ * Spring Security UserDetails implementation per SRS Section 6.2.
+ * Uses UUID for user identification and enum-based RBAC.
+ */
 public class CustomUserDetails implements UserDetails, OAuth2User {
     private static final long serialVersionUID = 1L;
 
-    private Long id;
-
-    private String username;
-
+    private UUID id;
     private String email;
-
-    private Integer role;
+    private String phone;
+    private String role;
+    private UUID merchantId;
+    private UUID outletId;
+    private UserStatus status;
 
     @JsonIgnore
     private String password;
 
     private Collection<? extends GrantedAuthority> authorities;
-
     private Map<String, Object> attributes;
 
-    public CustomUserDetails(Long id, String username, String email, String password,
-                             Collection<? extends GrantedAuthority> authorities, Integer role) {
+    public CustomUserDetails(UUID id, String email, String phone, String password,
+                             Collection<? extends GrantedAuthority> authorities, 
+                             String role, UUID merchantId, UUID outletId, UserStatus status) {
         this.id = id;
-        this.username = username;
         this.email = email;
+        this.phone = phone;
         this.password = password;
         this.authorities = authorities;
         this.role = role;
+        this.merchantId = merchantId;
+        this.outletId = outletId;
+        this.status = status;
     }
 
-    public CustomUserDetails(Long id, String username, String email, String password,
-                             Collection<? extends GrantedAuthority> authorities, Integer role, 
+    public CustomUserDetails(UUID id, String email, String phone, String password,
+                             Collection<? extends GrantedAuthority> authorities, 
+                             String role, UUID merchantId, UUID outletId, UserStatus status,
                              Map<String, Object> attributes) {
-        this.id = id;
-        this.username = username;
-        this.email = email;
-        this.password = password;
-        this.authorities = authorities;
-        this.role = role;
+        this(id, email, phone, password, authorities, role, merchantId, outletId, status);
         this.attributes = attributes;
     }
 
     public static CustomUserDetails build(User user) {
-        List<GrantedAuthority> authorities = new java.util.ArrayList<>();
+        List<GrantedAuthority> authorities = new ArrayList<>();
         
-        // Add role-based authority (ROLE_USER, ROLE_SHOP_OWNER, ROLE_ADMIN, etc.)
+        // Add role-based authority (ROLE_ADMIN, ROLE_MERCHANT, ROLE_OUTLET_USER, ROLE_USER)
         if (user.getRole() != null) {
-            authorities.add(new SimpleGrantedAuthority("ROLE_" + user.getRole().getType().getName()));
-            
-            // Add privilege-based authorities
-            if (user.getRole().getPrivileges() != null) {
-                user.getRole().getPrivileges().forEach(privilege ->
-                        authorities.add(new SimpleGrantedAuthority(privilege.getName())));
-            }
+            authorities.add(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));
         } else {
-            // Default role for users without assigned role
             authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
         }
 
         return new CustomUserDetails(
                 user.getId(),
-                user.getUserName(),
                 user.getEmail(),
-                user.getPassword(),
+                user.getPhone(),
+                user.getPasswordHash(),
                 authorities,
-                user.getRole() != null ? user.getRole().getId().intValue() : 0);
+                user.getRole() != null ? user.getRole().name() : "USER",
+                user.getMerchantId(),
+                user.getOutletId(),
+                user.getStatus());
     }
 
     public static CustomUserDetails build(User user, Map<String, Object> attributes) {
-        List<GrantedAuthority> authorities = new java.util.ArrayList<>();
-        
-        // Add role-based authority (ROLE_USER, ROLE_SHOP_OWNER, ROLE_ADMIN, etc.)
-        if (user.getRole() != null) {
-            authorities.add(new SimpleGrantedAuthority("ROLE_" + user.getRole().getType().getName()));
-            
-            // Add privilege-based authorities
-            if (user.getRole().getPrivileges() != null) {
-                user.getRole().getPrivileges().forEach(privilege ->
-                        authorities.add(new SimpleGrantedAuthority(privilege.getName())));
-            }
-        } else {
-            // Default role for users without assigned role
-            authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
-        }
-
-        return new CustomUserDetails(
-                user.getId(),
-                user.getUserName(),
-                user.getEmail(),
-                user.getPassword(),
-                authorities,
-                user.getRole() != null ? user.getRole().getId().intValue() : 0,
-                attributes);
+        CustomUserDetails details = build(user);
+        details.attributes = attributes;
+        return details;
     }
 
     // OAuth2User methods
     @Override
     public Map<String, Object> getAttributes() {
-        return attributes;
+        return attributes != null ? attributes : new HashMap<>();
     }
 
     @Override
     public String getName() {
-        return username;
+        return email != null ? email : phone;
     }
 
     // UserDetails methods
+    @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return authorities;
     }
 
-    public Long getId() {
-        return id;
-    }
-
-    public Long getUserId() {
+    public UUID getId() {
         return id;
     }
 
@@ -136,18 +107,30 @@ public class CustomUserDetails implements UserDetails, OAuth2User {
         return email;
     }
 
+    public String getPhone() {
+        return phone;
+    }
+
     @Override
     public String getPassword() {
         return password;
     }
 
-    public Integer getRole() {
+    public String getRole() {
         return role;
+    }
+
+    public UUID getMerchantId() {
+        return merchantId;
+    }
+
+    public UUID getOutletId() {
+        return outletId;
     }
 
     @Override
     public String getUsername() {
-        return username;
+        return email != null ? email : phone;
     }
 
     @Override
@@ -157,7 +140,7 @@ public class CustomUserDetails implements UserDetails, OAuth2User {
 
     @Override
     public boolean isAccountNonLocked() {
-        return true;
+        return status != UserStatus.SUSPENDED;
     }
 
     @Override
@@ -167,16 +150,19 @@ public class CustomUserDetails implements UserDetails, OAuth2User {
 
     @Override
     public boolean isEnabled() {
-        return true;
+        return status == UserStatus.ACTIVE;
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (o == null || getClass() != o.getClass())
-            return false;
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
         CustomUserDetails user = (CustomUserDetails) o;
         return Objects.equals(id, user.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
     }
 }

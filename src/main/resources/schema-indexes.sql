@@ -6,16 +6,26 @@
 CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id);
 CREATE INDEX IF NOT EXISTS idx_orders_user_status ON orders(user_id, status);
 
--- Index for shop's order management (OrderServiceImpl.findByShopId, findByShopIdAndStatus)
-CREATE INDEX IF NOT EXISTS idx_orders_shop_id ON orders(shop_id);
-CREATE INDEX IF NOT EXISTS idx_orders_shop_status ON orders(shop_id, status);
+-- Index for outlet's order management (OrderServiceImpl.findByOutletId, findByOutletIdAndStatus)
+CREATE INDEX IF NOT EXISTS idx_orders_outlet_id ON orders(outlet_id);
+CREATE INDEX IF NOT EXISTS idx_orders_outlet_status ON orders(outlet_id, status);
+
+-- HIGH FIX (Issue #4): Critical indexes for OrderExpiryTask scheduled queries
+-- These prevent full table scans on frequently executed scheduled tasks
+CREATE INDEX IF NOT EXISTS idx_orders_status_acceptance_deadline ON orders(status, acceptance_deadline);
+CREATE INDEX IF NOT EXISTS idx_orders_status_pickup_by ON orders(status, pickup_by);
+CREATE INDEX IF NOT EXISTS idx_orders_status_picked_up_at ON orders(status, picked_up_at);
+CREATE INDEX IF NOT EXISTS idx_orders_status_ready_at ON orders(status, ready_at);
 
 -- Index for order expiry task (OrderExpiryTask queries by status and dates)
 CREATE INDEX IF NOT EXISTS idx_orders_status_created ON orders(status, created_at);
 CREATE INDEX IF NOT EXISTS idx_orders_status_pickup ON orders(status, pickup_time);
 
--- Index for shop rating calculations (OrderServiceImpl.calculateAverageRatingByShopId)
-CREATE INDEX IF NOT EXISTS idx_orders_shop_rating ON orders(shop_id, rating) WHERE rating IS NOT NULL;
+-- Index for outlet rating calculations
+CREATE INDEX IF NOT EXISTS idx_orders_outlet_rating ON orders(outlet_id, rating) WHERE rating IS NOT NULL;
+
+-- Index for order number lookup
+CREATE INDEX IF NOT EXISTS idx_orders_order_number ON orders(order_number);
 
 -- ===================== Payments Table Indexes =====================
 -- Index for payment lookups by order

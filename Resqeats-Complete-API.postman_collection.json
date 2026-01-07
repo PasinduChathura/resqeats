@@ -1,0 +1,1622 @@
+{
+  "info": {
+    "_postman_id": "resqeats-complete-api-2026",
+    "name": "Resqeats Complete API",
+    "description": "Complete API collection for Resqeats Food Rescue Platform - SRS Compliant",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8089",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "merchantId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "outletId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "itemId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "outletItemId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "orderId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "paymentMethodId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "1. Authentication",
+      "item": [
+        {
+          "name": "Register User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.success && jsonData.data) {",
+                  "    pm.collectionVariables.set('accessToken', jsonData.data.accessToken);",
+                  "    pm.collectionVariables.set('refreshToken', jsonData.data.refreshToken);",
+                  "    pm.collectionVariables.set('userId', jsonData.data.user.id);",
+                  "}",
+                  "pm.test('Registration successful', function () {",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"user@example.com\",\n    \"password\": \"Password123!\",\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\",\n    \"phone\": \"+94771234567\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.success && jsonData.data) {",
+                  "    pm.collectionVariables.set('accessToken', jsonData.data.accessToken);",
+                  "    pm.collectionVariables.set('refreshToken', jsonData.data.refreshToken);",
+                  "    pm.collectionVariables.set('userId', jsonData.data.user.id);",
+                  "}",
+                  "pm.test('Login successful', function () {",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"user@example.com\",\n    \"password\": \"Password123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Request OTP",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"phone\": \"+94771234567\",\n    \"purpose\": \"LOGIN\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/otp/request",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "otp", "request"]
+            }
+          }
+        },
+        {
+          "name": "Verify OTP",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.success && jsonData.data) {",
+                  "    pm.collectionVariables.set('accessToken', jsonData.data.accessToken);",
+                  "    pm.collectionVariables.set('refreshToken', jsonData.data.refreshToken);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"phone\": \"+94771234567\",\n    \"otp\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/otp/verify",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "otp", "verify"]
+            }
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.success && jsonData.data) {",
+                  "    pm.collectionVariables.set('accessToken', jsonData.data.accessToken);",
+                  "    pm.collectionVariables.set('refreshToken', jsonData.data.refreshToken);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/token/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "token", "refresh"]
+            }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "logout"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. User Management",
+      "item": [
+        {
+          "name": "Get Current User Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users", "me"]
+            }
+          }
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"firstName\": \"John\",\n    \"lastName\": \"Smith\",\n    \"profileImageUrl\": \"https://example.com/avatar.jpg\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users", "me"]
+            }
+          }
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"currentPassword\": \"Password123!\",\n    \"newPassword\": \"NewPassword456!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/me/password",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users", "me", "password"]
+            }
+          }
+        },
+        {
+          "name": "Deactivate Account",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users", "me"]
+            }
+          }
+        },
+        {
+          "name": "[ADMIN] List All Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/users?page=0&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "users"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "[ADMIN] Get User By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/users/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "users", "{{userId}}"]
+            }
+          }
+        },
+        {
+          "name": "[ADMIN] Suspend User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"reason\": \"Violation of terms of service\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/users/{{userId}}/suspend",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "users", "{{userId}}", "suspend"]
+            }
+          }
+        },
+        {
+          "name": "[ADMIN] Reactivate User",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/users/{{userId}}/reactivate",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "users",
+                "{{userId}}",
+                "reactivate"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Merchant Management",
+      "item": [
+        {
+          "name": "Register as Merchant",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.success && jsonData.data) {",
+                  "    pm.collectionVariables.set('merchantId', jsonData.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"businessName\": \"Fresh Foods Co\",\n    \"businessRegistrationNumber\": \"BR-2024-001\",\n    \"businessType\": \"RESTAURANT\",\n    \"description\": \"Sustainable food rescue from premium restaurants\",\n    \"contactEmail\": \"contact@freshfoods.com\",\n    \"contactPhone\": \"+94112345678\",\n    \"website\": \"https://freshfoods.com\",\n    \"logoUrl\": \"https://example.com/logo.png\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/merchants",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "merchants"]
+            }
+          }
+        },
+        {
+          "name": "Get Merchant Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/merchants/{{merchantId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "merchants", "{{merchantId}}"]
+            }
+          }
+        },
+        {
+          "name": "Search Merchants",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/merchants?query=fresh&page=0&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "merchants"],
+              "query": [
+                { "key": "query", "value": "fresh" },
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "[MERCHANT] Get My Merchant",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/merchants/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "merchants", "me"]
+            }
+          }
+        },
+        {
+          "name": "[MERCHANT] Update My Merchant",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"businessName\": \"Fresh Foods Co Updated\",\n    \"description\": \"Updated description\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/merchants/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "merchants", "me"]
+            }
+          }
+        },
+        {
+          "name": "[ADMIN] List All Merchants",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/merchants?status=PENDING&page=0&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "merchants"],
+              "query": [
+                { "key": "status", "value": "PENDING" },
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "[ADMIN] Approve Merchant",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/merchants/{{merchantId}}/approve",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "merchants",
+                "{{merchantId}}",
+                "approve"
+              ]
+            }
+          }
+        },
+        {
+          "name": "[ADMIN] Reject Merchant",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"reason\": \"Incomplete documentation\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/merchants/{{merchantId}}/reject",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "merchants",
+                "{{merchantId}}",
+                "reject"
+              ]
+            }
+          }
+        },
+        {
+          "name": "[ADMIN] Suspend Merchant",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"reason\": \"Policy violation\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/merchants/{{merchantId}}/suspend",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "merchants",
+                "{{merchantId}}",
+                "suspend"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Outlet Management",
+      "item": [
+        {
+          "name": "Find Nearby Outlets",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/outlets/nearby?latitude=6.9271&longitude=79.8612&radiusKm=5",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "outlets", "nearby"],
+              "query": [
+                { "key": "latitude", "value": "6.9271" },
+                { "key": "longitude", "value": "79.8612" },
+                { "key": "radiusKm", "value": "5" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Outlet Details",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/outlets/{{outletId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "outlets", "{{outletId}}"]
+            }
+          }
+        },
+        {
+          "name": "Search Outlets",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/outlets?query=coffee&page=0&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "outlets"],
+              "query": [
+                { "key": "query", "value": "coffee" },
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "[MERCHANT] Create Outlet",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.success && jsonData.data) {",
+                  "    pm.collectionVariables.set('outletId', jsonData.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Fresh Foods - Colombo 7\",\n    \"description\": \"Premium surplus food at discounted prices\",\n    \"address\": \"123 Galle Road\",\n    \"city\": \"Colombo\",\n    \"state\": \"Western\",\n    \"postalCode\": \"00700\",\n    \"latitude\": 6.9271,\n    \"longitude\": 79.8612,\n    \"phone\": \"+94112345678\",\n    \"email\": \"colombo7@freshfoods.com\",\n    \"operatingHours\": [\n        {\n            \"dayOfWeek\": \"MONDAY\",\n            \"openTime\": \"09:00\",\n            \"closeTime\": \"21:00\",\n            \"isClosed\": false\n        },\n        {\n            \"dayOfWeek\": \"TUESDAY\",\n            \"openTime\": \"09:00\",\n            \"closeTime\": \"21:00\",\n            \"isClosed\": false\n        },\n        {\n            \"dayOfWeek\": \"WEDNESDAY\",\n            \"openTime\": \"09:00\",\n            \"closeTime\": \"21:00\",\n            \"isClosed\": false\n        },\n        {\n            \"dayOfWeek\": \"THURSDAY\",\n            \"openTime\": \"09:00\",\n            \"closeTime\": \"21:00\",\n            \"isClosed\": false\n        },\n        {\n            \"dayOfWeek\": \"FRIDAY\",\n            \"openTime\": \"09:00\",\n            \"closeTime\": \"22:00\",\n            \"isClosed\": false\n        },\n        {\n            \"dayOfWeek\": \"SATURDAY\",\n            \"openTime\": \"10:00\",\n            \"closeTime\": \"22:00\",\n            \"isClosed\": false\n        },\n        {\n            \"dayOfWeek\": \"SUNDAY\",\n            \"openTime\": \"10:00\",\n            \"closeTime\": \"18:00\",\n            \"isClosed\": false\n        }\n    ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/merchants/{{merchantId}}/outlets",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "merchants", "{{merchantId}}", "outlets"]
+            }
+          }
+        },
+        {
+          "name": "[MERCHANT] List Merchant Outlets",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/merchants/{{merchantId}}/outlets",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "merchants", "{{merchantId}}", "outlets"]
+            }
+          }
+        },
+        {
+          "name": "[MERCHANT] Update Outlet",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Fresh Foods - Colombo 7 Updated\",\n    \"phone\": \"+94112345679\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/outlets/{{outletId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "outlets", "{{outletId}}"]
+            }
+          }
+        },
+        {
+          "name": "[MERCHANT] Set Operating Hours",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n    {\n        \"dayOfWeek\": \"MONDAY\",\n        \"openTime\": \"08:00\",\n        \"closeTime\": \"22:00\",\n        \"isClosed\": false\n    }\n]"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/outlets/{{outletId}}/hours",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "outlets", "{{outletId}}", "hours"]
+            }
+          }
+        },
+        {
+          "name": "[MERCHANT] Activate Outlet",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/outlets/{{outletId}}/activate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "outlets", "{{outletId}}", "activate"]
+            }
+          }
+        },
+        {
+          "name": "[MERCHANT] Deactivate Outlet",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/outlets/{{outletId}}/deactivate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "outlets", "{{outletId}}", "deactivate"]
+            }
+          }
+        },
+        {
+          "name": "[OUTLET] Open Outlet",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/outlets/{{outletId}}/open",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "outlets", "{{outletId}}", "open"]
+            }
+          }
+        },
+        {
+          "name": "[OUTLET] Close Outlet",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/outlets/{{outletId}}/close",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "outlets", "{{outletId}}", "close"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Item Management",
+      "item": [
+        {
+          "name": "Get Outlet Items (Public)",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/outlets/{{outletId}}/items",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "outlets", "{{outletId}}", "items"]
+            }
+          }
+        },
+        {
+          "name": "Search Items",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/items/search?query=burger&page=0&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "items", "search"],
+              "query": [
+                { "key": "query", "value": "burger" },
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Item Details",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/items/{{itemId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "items", "{{itemId}}"]
+            }
+          }
+        },
+        {
+          "name": "[MERCHANT] Create Item",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.success && jsonData.data) {",
+                  "    pm.collectionVariables.set('itemId', jsonData.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Mystery Food Box - Large\",\n    \"description\": \"A surprise selection of premium surplus food items\",\n    \"itemType\": \"MYSTERY_BOX\",\n    \"category\": \"MIXED\",\n    \"basePrice\": 25.00,\n    \"salePrice\": 12.50,\n    \"imageUrl\": \"https://example.com/mystery-box.jpg\",\n    \"dietaryInfo\": {\n        \"isVegetarian\": false,\n        \"isVegan\": false,\n        \"isGlutenFree\": false,\n        \"isHalal\": true,\n        \"allergens\": [\"NUTS\", \"DAIRY\"]\n    }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/merchants/{{merchantId}}/items",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "merchants", "{{merchantId}}", "items"]
+            }
+          }
+        },
+        {
+          "name": "[MERCHANT] List Merchant Items",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/merchants/{{merchantId}}/items?page=0&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "merchants", "{{merchantId}}", "items"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "[MERCHANT] Update Item",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Mystery Food Box - Large (Updated)\",\n    \"salePrice\": 10.00\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/items/{{itemId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "items", "{{itemId}}"]
+            }
+          }
+        },
+        {
+          "name": "[OUTLET] Add Item to Outlet",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.success && jsonData.data) {",
+                  "    pm.collectionVariables.set('outletItemId', jsonData.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"itemId\": \"{{itemId}}\",\n    \"quantity\": 10\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/outlets/{{outletId}}/items",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "outlets", "{{outletId}}", "items"]
+            }
+          }
+        },
+        {
+          "name": "[OUTLET] Update Outlet Item",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"quantity\": 15\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/outlets/{{outletId}}/items/{{outletItemId}}",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "outlets",
+                "{{outletId}}",
+                "items",
+                "{{outletItemId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "[OUTLET] Remove Item from Outlet",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/outlets/{{outletId}}/items/{{outletItemId}}",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "outlets",
+                "{{outletId}}",
+                "items",
+                "{{outletItemId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Cart Management",
+      "item": [
+        {
+          "name": "Get Cart",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/cart",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "cart"]
+            }
+          }
+        },
+        {
+          "name": "Add Item to Cart",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"outletItemId\": \"{{outletItemId}}\",\n    \"quantity\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/cart/items",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "cart", "items"]
+            }
+          }
+        },
+        {
+          "name": "Update Item Quantity",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"quantity\": 3\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/cart/items/{{outletItemId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "cart", "items", "{{outletItemId}}"]
+            }
+          }
+        },
+        {
+          "name": "Remove Item from Cart",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/cart/items/{{outletItemId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "cart", "items", "{{outletItemId}}"]
+            }
+          }
+        },
+        {
+          "name": "Clear Cart",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/cart",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "cart"]
+            }
+          }
+        },
+        {
+          "name": "Validate Cart",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/cart/validate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "cart", "validate"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Order Management",
+      "item": [
+        {
+          "name": "Customer Orders",
+          "item": [
+            {
+              "name": "Create Order (Checkout)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "var jsonData = pm.response.json();",
+                      "if (jsonData.success && jsonData.data) {",
+                      "    pm.collectionVariables.set('orderId', jsonData.data.id);",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"outletId\": \"{{outletId}}\",\n    \"items\": [\n        {\n            \"itemId\": \"{{itemId}}\",\n            \"quantity\": 2,\n            \"unitPrice\": 12.50,\n            \"itemName\": \"Mystery Food Box - Large\"\n        }\n    ],\n    \"pickupBy\": \"2026-01-04T18:00:00\",\n    \"notes\": \"Please include vegetarian options if possible\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/orders",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "orders"]
+                }
+              }
+            },
+            {
+              "name": "Submit Order with Payment",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"paymentMethodId\": \"{{paymentMethodId}}\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/orders/{{orderId}}/submit",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "orders", "{{orderId}}", "submit"]
+                }
+              }
+            },
+            {
+              "name": "List My Orders",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/orders?page=0&size=10",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "orders"],
+                  "query": [
+                    { "key": "page", "value": "0" },
+                    { "key": "size", "value": "10" }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Get Order Details",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/orders/{{orderId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "orders", "{{orderId}}"]
+                }
+              }
+            },
+            {
+              "name": "Cancel Order",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"reason\": \"Changed my mind\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/orders/{{orderId}}/cancel",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "orders", "{{orderId}}", "cancel"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Outlet Orders",
+          "item": [
+            {
+              "name": "List Outlet Orders",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/outlet/orders?page=0&size=20",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "outlet", "orders"],
+                  "query": [
+                    { "key": "page", "value": "0" },
+                    { "key": "size", "value": "20" }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Get Pending Orders",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/outlet/orders/pending?page=0&size=20",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "outlet", "orders", "pending"],
+                  "query": [
+                    { "key": "page", "value": "0" },
+                    { "key": "size", "value": "20" }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Accept Order",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"estimatedPrepMinutes\": 15\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/outlet/orders/{{orderId}}/accept",
+                  "host": ["{{baseUrl}}"],
+                  "path": [
+                    "api",
+                    "v1",
+                    "outlet",
+                    "orders",
+                    "{{orderId}}",
+                    "accept"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Decline Order",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"reason\": \"Item no longer available\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/outlet/orders/{{orderId}}/decline",
+                  "host": ["{{baseUrl}}"],
+                  "path": [
+                    "api",
+                    "v1",
+                    "outlet",
+                    "orders",
+                    "{{orderId}}",
+                    "decline"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Start Preparing",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/outlet/orders/{{orderId}}/preparing",
+                  "host": ["{{baseUrl}}"],
+                  "path": [
+                    "api",
+                    "v1",
+                    "outlet",
+                    "orders",
+                    "{{orderId}}",
+                    "preparing"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Mark Ready for Pickup",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/outlet/orders/{{orderId}}/ready",
+                  "host": ["{{baseUrl}}"],
+                  "path": [
+                    "api",
+                    "v1",
+                    "outlet",
+                    "orders",
+                    "{{orderId}}",
+                    "ready"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Verify Pickup Code",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"pickupCode\": \"123456\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/outlet/orders/{{orderId}}/verify",
+                  "host": ["{{baseUrl}}"],
+                  "path": [
+                    "api",
+                    "v1",
+                    "outlet",
+                    "orders",
+                    "{{orderId}}",
+                    "verify"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Complete Order",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/outlet/orders/{{orderId}}/complete",
+                  "host": ["{{baseUrl}}"],
+                  "path": [
+                    "api",
+                    "v1",
+                    "outlet",
+                    "orders",
+                    "{{orderId}}",
+                    "complete"
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "8. Payment Management",
+      "item": [
+        {
+          "name": "List Payment Methods",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/payments/methods",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "payments", "methods"]
+            }
+          }
+        },
+        {
+          "name": "Add Payment Method",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.success && jsonData.data) {",
+                  "    pm.collectionVariables.set('paymentMethodId', jsonData.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"type\": \"CARD\",\n    \"cardToken\": \"tok_visa_4242424242424242\",\n    \"cardLast4\": \"4242\",\n    \"cardBrand\": \"Visa\",\n    \"cardExpMonth\": 12,\n    \"cardExpYear\": 2027,\n    \"isDefault\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/payments/methods",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "payments", "methods"]
+            }
+          }
+        },
+        {
+          "name": "Set Default Payment Method",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/payments/methods/{{paymentMethodId}}/default",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "payments",
+                "methods",
+                "{{paymentMethodId}}",
+                "default"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Remove Payment Method",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/payments/methods/{{paymentMethodId}}",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "payments",
+                "methods",
+                "{{paymentMethodId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Payment for Order",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/payments/{{orderId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "payments", "{{orderId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "9. Notification Management",
+      "item": [
+        {
+          "name": "List Notifications",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/notifications?page=0&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "notifications"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Unread Count",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/notifications/unread/count",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "notifications", "unread", "count"]
+            }
+          }
+        },
+        {
+          "name": "Mark as Read",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/notifications/{{notificationId}}/read",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "notifications",
+                "{{notificationId}}",
+                "read"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Mark All as Read",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/notifications/read-all",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "notifications", "read-all"]
+            }
+          }
+        },
+        {
+          "name": "Delete Notification",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/notifications/{{notificationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "notifications", "{{notificationId}}"]
+            }
+          }
+        },
+        {
+          "name": "Register FCM Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"token\": \"fcm_device_token_here\",\n    \"deviceType\": \"android\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/notifications/token",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "notifications", "token"]
+            }
+          }
+        },
+        {
+          "name": "Unregister FCM Token",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/notifications/token",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "notifications", "token"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

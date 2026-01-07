@@ -86,6 +86,8 @@ public final class ErrorCodes {
     public static final String ORDER_ALREADY_PICKED_UP = "ORDER_009";
     public static final String ORDER_PICKUP_WINDOW_CLOSED = "ORDER_010";
     public static final String ORDER_MULTIPLE_SHOPS = "ORDER_011";
+    // LOW FIX (Issue #18): Added distinct error code for review period expired
+    public static final String ORDER_REVIEW_PERIOD_EXPIRED = "ORDER_012";
 
     // ===================== Payment Errors (PAY_xxx) =====================
     public static final String PAYMENT_NOT_FOUND = "PAY_001";

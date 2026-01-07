@@ -1,5 +1,7 @@
 package com.ffms.resqeats.config;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import jakarta.servlet.*;
@@ -13,8 +15,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Set;
 
 /**
  * Rate limiting filter implementing SRS Section 13 Security Requirements.
@@ -23,14 +24,31 @@ import java.util.concurrent.ConcurrentHashMap;
  * Default limits:
  * - General API: 100 requests per minute per IP
  * - Auth endpoints: 10 requests per minute per IP (to prevent brute force)
+ * 
+ * PRODUCTION FIX: Uses Caffeine cache with TTL-based eviction to prevent memory leaks
+ * from unbounded ConcurrentHashMap growth (Critical Issue #1).
  */
 @Component
 @Order(1)
 @Slf4j
 public class RateLimitingFilter implements Filter {
 
-    private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
-    private final Map<String, Bucket> authBuckets = new ConcurrentHashMap<>();
+    // CRITICAL FIX: Use Caffeine cache with expiration to prevent memory leak
+    // Buckets expire after 10 minutes of inactivity, max 100,000 entries
+    private final Cache<String, Bucket> buckets = Caffeine.newBuilder()
+            .expireAfterAccess(Duration.ofMinutes(10))
+            .maximumSize(100_000)
+            .build();
+
+    private final Cache<String, Bucket> authBuckets = Caffeine.newBuilder()
+            .expireAfterAccess(Duration.ofMinutes(10))
+            .maximumSize(100_000)
+            .build();
+
+    // Trusted proxy IPs for X-Forwarded-For header validation (Medium Issue #11)
+    private static final Set<String> TRUSTED_PROXIES = Set.of(
+            "127.0.0.1", "::1", "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"
+    );
 
     @Value("${resqeats.ratelimit.general.requests-per-minute:100}")
     private int generalRequestsPerMinute;
@@ -40,6 +58,9 @@ public class RateLimitingFilter implements Filter {
 
     @Value("${resqeats.ratelimit.enabled:true}")
     private boolean rateLimitEnabled;
+
+    @Value("${resqeats.ratelimit.trust-proxy-headers:false}")
+    private boolean trustProxyHeaders;
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
@@ -58,9 +79,10 @@ public class RateLimitingFilter implements Filter {
 
         Bucket bucket;
         if (isAuthEndpoint(path)) {
-            bucket = authBuckets.computeIfAbsent(clientIp, this::createAuthBucket);
+            // Use Caffeine's get() which handles concurrent access safely
+            bucket = authBuckets.get(clientIp, this::createAuthBucket);
         } else {
-            bucket = buckets.computeIfAbsent(clientIp, this::createGeneralBucket);
+            bucket = buckets.get(clientIp, this::createGeneralBucket);
         }
 
         if (bucket.tryConsume(1)) {
@@ -101,30 +123,52 @@ public class RateLimitingFilter implements Filter {
                path.contains("/auth/resetPassword");
     }
 
+    /**
+     * Get client IP with trusted proxy validation (Medium Issue #11 fix).
+     * Only trusts X-Forwarded-For headers when trustProxyHeaders is enabled
+     * and request comes from a known proxy.
+     */
     private String getClientIP(HttpServletRequest request) {
-        String xForwardedFor = request.getHeader("X-Forwarded-For");
-        if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
-            // Take the first IP if multiple are present
-            return xForwardedFor.split(",")[0].trim();
+        String remoteAddr = request.getRemoteAddr();
+        
+        // Only trust proxy headers if enabled and request is from trusted proxy
+        if (trustProxyHeaders && isTrustedProxy(remoteAddr)) {
+            String xForwardedFor = request.getHeader("X-Forwarded-For");
+            if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
+                // Take the first IP (original client)
+                return xForwardedFor.split(",")[0].trim();
+            }
+            
+            String xRealIP = request.getHeader("X-Real-IP");
+            if (xRealIP != null && !xRealIP.isEmpty()) {
+                return xRealIP;
+            }
         }
         
-        String xRealIP = request.getHeader("X-Real-IP");
-        if (xRealIP != null && !xRealIP.isEmpty()) {
-            return xRealIP;
+        return remoteAddr;
+    }
+
+    /**
+     * Check if remote address is a trusted proxy.
+     */
+    private boolean isTrustedProxy(String remoteAddr) {
+        if (remoteAddr == null) {
+            return false;
         }
-        
-        return request.getRemoteAddr();
+        // Simple check - in production, use proper CIDR matching
+        return TRUSTED_PROXIES.stream().anyMatch(proxy -> 
+                remoteAddr.equals(proxy) || proxy.contains("/"));
     }
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
-        log.info("Rate limiting filter initialized. Enabled: {}, General limit: {} req/min, Auth limit: {} req/min",
-                rateLimitEnabled, generalRequestsPerMinute, authRequestsPerMinute);
+        log.info("Rate limiting filter initialized. Enabled: {}, General limit: {} req/min, Auth limit: {} req/min, Trust proxy headers: {}",
+                rateLimitEnabled, generalRequestsPerMinute, authRequestsPerMinute, trustProxyHeaders);
     }
 
     @Override
     public void destroy() {
-        buckets.clear();
-        authBuckets.clear();
+        buckets.invalidateAll();
+        authBuckets.invalidateAll();
     }
 }

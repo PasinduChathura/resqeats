@@ -1,6 +1,5 @@
 package com.ffms.resqeats.validation.common.annotations;
 
-import com.ffms.resqeats.validation.common.validators.EnumValidator;
 import com.ffms.resqeats.validation.common.validators.PhoneNumberValidator;
 import jakarta.validation.Constraint;
 import jakarta.validation.Payload;

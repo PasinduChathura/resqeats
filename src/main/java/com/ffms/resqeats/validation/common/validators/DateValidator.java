@@ -4,7 +4,6 @@ import com.ffms.resqeats.validation.common.annotations.ValidDate;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 

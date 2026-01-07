@@ -5,6 +5,7 @@ import com.ffms.resqeats.security.CustomPermissionEvaluator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.access.expression.method.MethodSecurityExpressionHandler;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 
 @Configuration
@@ -12,9 +13,10 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 public class MethodSecurityConfig {
 
     @Bean
-    protected MethodSecurityExpressionHandler createExpressionHandler() {
+    protected MethodSecurityExpressionHandler createExpressionHandler(RoleHierarchy roleHierarchy) {
         final CustomMethodSecurityExpressionHandler expressionHandler = new CustomMethodSecurityExpressionHandler();
         expressionHandler.setPermissionEvaluator(new CustomPermissionEvaluator());
+        expressionHandler.setRoleHierarchy(roleHierarchy);
         return expressionHandler;
     }
 }

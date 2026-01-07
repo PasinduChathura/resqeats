@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 @Component
 public class LoggingAspect {
 
-    private static final Logger log = LoggerFactory.getLogger(LoggingAspect.class);
+    
 
     // ===================== Service Layer Logging =====================
 
@@ -139,7 +139,6 @@ public class LoggingAspect {
             String operation, String entity, Loggable loggable) throws Throwable {
         
         String className = joinPoint.getTarget().getClass().getSimpleName();
-        String methodName = joinPoint.getSignature().getName();
         Logger logger = LoggerFactory.getLogger(joinPoint.getTarget().getClass());
         
         if (loggable.logParams()) {

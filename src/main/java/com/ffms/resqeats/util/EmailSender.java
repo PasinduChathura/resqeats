@@ -9,8 +9,6 @@ import org.springframework.mail.MailSendException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
-import org.thymeleaf.spring6.SpringTemplateEngine;
-
 import java.nio.charset.StandardCharsets;
 
 @Service
@@ -19,8 +17,6 @@ public class EmailSender {
     private static final Logger LOGGER = LoggerFactory.getLogger(EmailSender.class);
     @Autowired
     private JavaMailSender javaMailSender;
-    @Autowired
-    private SpringTemplateEngine templateEngine;
 
     public void sendEmail(MailDto mailDto) throws Exception {
         try {

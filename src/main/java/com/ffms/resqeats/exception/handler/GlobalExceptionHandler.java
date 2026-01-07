@@ -7,19 +7,21 @@ import com.ffms.resqeats.exception.cart.CartException;
 import com.ffms.resqeats.exception.common.BaseException;
 import com.ffms.resqeats.exception.common.ErrorCodes;
 import com.ffms.resqeats.exception.common.NotFoundException;
-import com.ffms.resqeats.exception.food.FoodItemException;
-import com.ffms.resqeats.exception.food.SecretBoxException;
+import com.ffms.resqeats.common.exception.BusinessException;
 import com.ffms.resqeats.exception.order.OrderException;
 import com.ffms.resqeats.exception.payment.PaymentException;
 import com.ffms.resqeats.exception.security.RefreshTokenException;
 import com.ffms.resqeats.exception.security.TokenExpiredException;
-import com.ffms.resqeats.exception.shop.ShopException;
-import com.ffms.resqeats.exception.usermgt.UserNotFoundException;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.UnsupportedJwtException;
+import io.jsonwebtoken.security.SignatureException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.mail.MailSendException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
@@ -36,7 +38,7 @@ import java.util.stream.Collectors;
 
 /**
  * Global exception handler providing consistent error responses with logging.
- * All exceptions are logged with correlation IDs for request tracing.
+ * Per SRS Section 7.4: All exceptions are logged with correlation IDs for request tracing.
  */
 @RestControllerAdvice
 @Slf4j
@@ -137,7 +139,8 @@ public class GlobalExceptionHandler {
             AuthenticationException ex, HttpServletRequest request) {
         appLogger.logSecurityEvent("AUTH_FAILED", ex.getMessage());
         return buildErrorResponse(HttpStatus.UNAUTHORIZED, "Unauthorized",
-                ErrorCodes.AUTH_INVALID_CREDENTIALS, ex.getMessage(), request);
+                ErrorCodes.AUTH_INVALID_CREDENTIALS, 
+                "Authentication failed. Please check your credentials.", request);
     }
 
     @ExceptionHandler(RefreshTokenException.class)
@@ -145,7 +148,8 @@ public class GlobalExceptionHandler {
             RefreshTokenException ex, HttpServletRequest request) {
         appLogger.warn("Refresh token error: {}", ex.getMessage());
         return buildErrorResponse(HttpStatus.UNAUTHORIZED, "Unauthorized",
-                ErrorCodes.AUTH_REFRESH_TOKEN_INVALID, ex.getMessage(), request);
+                ErrorCodes.AUTH_REFRESH_TOKEN_INVALID, 
+                "Session refresh failed. Please login again.", request);
     }
 
     @ExceptionHandler(TokenExpiredException.class)
@@ -153,7 +157,8 @@ public class GlobalExceptionHandler {
             TokenExpiredException ex, HttpServletRequest request) {
         appLogger.warn("Token expired: {}", ex.getMessage());
         return buildErrorResponse(HttpStatus.UNAUTHORIZED, "Unauthorized",
-                ErrorCodes.AUTH_TOKEN_EXPIRED, ex.getMessage(), request);
+                ErrorCodes.AUTH_TOKEN_EXPIRED, 
+                "Your session has expired. Please login again.", request);
     }
 
     // ===================== Business Exceptions =====================
@@ -166,30 +171,12 @@ public class GlobalExceptionHandler {
                 ErrorCodes.SYSTEM_INTERNAL_ERROR, ex.getMessage(), request);
     }
 
-    @ExceptionHandler(UserNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleUserNotFoundException(
-            UserNotFoundException ex, HttpServletRequest request) {
-        appLogger.warn("User not found: {}", ex.getMessage());
-        return buildErrorResponse(HttpStatus.NOT_FOUND, "Not Found",
-                ErrorCodes.USER_NOT_FOUND, ex.getMessage(), request);
-    }
-
-    @ExceptionHandler(ShopException.class)
-    public ResponseEntity<ErrorResponse> handleShopException(
-            ShopException ex, HttpServletRequest request) {
-        return handleBaseException(ex, request, HttpStatus.BAD_REQUEST);
-    }
-
-    @ExceptionHandler(FoodItemException.class)
-    public ResponseEntity<ErrorResponse> handleFoodItemException(
-            FoodItemException ex, HttpServletRequest request) {
-        return handleBaseException(ex, request, HttpStatus.BAD_REQUEST);
-    }
-
-    @ExceptionHandler(SecretBoxException.class)
-    public ResponseEntity<ErrorResponse> handleSecretBoxException(
-            SecretBoxException ex, HttpServletRequest request) {
-        return handleBaseException(ex, request, HttpStatus.BAD_REQUEST);
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<ErrorResponse> handleBusinessException(
+            BusinessException ex, HttpServletRequest request) {
+        appLogger.warn("[{}] Business error: {}", ex.getErrorCode(), ex.getMessage());
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, "Bad Request",
+                ex.getErrorCode(), ex.getMessage(), request);
     }
 
     @ExceptionHandler(CartException.class)
@@ -210,6 +197,56 @@ public class GlobalExceptionHandler {
         appLogger.logError("PAYMENT", "Payment", ex.getMessage());
         return buildErrorResponse(HttpStatus.BAD_REQUEST, "Bad Request",
                 ex.getErrorCode(), ex.getMessage(), request);
+    }
+
+    // ===================== JWT Exceptions =====================
+
+    @ExceptionHandler(MalformedJwtException.class)
+    public ResponseEntity<ErrorResponse> handleMalformedJwtException(
+            MalformedJwtException ex, HttpServletRequest request) {
+        appLogger.logSecurityEvent("MALFORMED_JWT", "Invalid JWT token format");
+        return buildErrorResponse(HttpStatus.UNAUTHORIZED, "Unauthorized",
+                ErrorCodes.AUTH_TOKEN_INVALID,
+                "Authentication failed. Please login again.", request);
+    }
+
+    @ExceptionHandler(ExpiredJwtException.class)
+    public ResponseEntity<ErrorResponse> handleExpiredJwtException(
+            ExpiredJwtException ex, HttpServletRequest request) {
+        String subject = ex.getClaims() != null ? ex.getClaims().getSubject() : "unknown";
+        appLogger.warn("JWT token expired for user: {}", subject);
+        return buildErrorResponse(HttpStatus.UNAUTHORIZED, "Unauthorized",
+                ErrorCodes.AUTH_TOKEN_EXPIRED,
+                "Your session has expired. Please login again.", request);
+    }
+
+    @ExceptionHandler(UnsupportedJwtException.class)
+    public ResponseEntity<ErrorResponse> handleUnsupportedJwtException(
+            UnsupportedJwtException ex, HttpServletRequest request) {
+        appLogger.logSecurityEvent("UNSUPPORTED_JWT", "Unsupported JWT token");
+        return buildErrorResponse(HttpStatus.UNAUTHORIZED, "Unauthorized",
+                ErrorCodes.AUTH_TOKEN_INVALID,
+                "Authentication failed. Please login again.", request);
+    }
+
+    @ExceptionHandler(SignatureException.class)
+    public ResponseEntity<ErrorResponse> handleSignatureException(
+            SignatureException ex, HttpServletRequest request) {
+        appLogger.logSecurityEvent("INVALID_JWT_SIGNATURE", "JWT signature validation failed");
+        return buildErrorResponse(HttpStatus.UNAUTHORIZED, "Unauthorized",
+                ErrorCodes.AUTH_TOKEN_INVALID,
+                "Authentication failed. Please login again.", request);
+    }
+
+    // ===================== Mail Exception =====================
+
+    @ExceptionHandler(MailSendException.class)
+    public ResponseEntity<ErrorResponse> handleMailSendException(
+            MailSendException ex, HttpServletRequest request) {
+        appLogger.error("Mail send error: {}", ex.getMessage());
+        return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal Server Error",
+                ErrorCodes.NOTIFICATION_SEND_FAILED,
+                "Failed to send email. Please try again later.", request);
     }
 
     // ===================== Catch-All Exception Handler =====================

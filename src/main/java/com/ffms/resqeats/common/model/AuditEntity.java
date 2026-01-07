@@ -3,11 +3,8 @@ package com.ffms.resqeats.common.model;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.envers.Audited;
-import org.hibernate.id.enhanced.SequenceStyleGenerator;
-import org.hibernate.annotations.Parameter;
 
 import java.io.Serializable;
 import java.util.Date;
@@ -17,14 +14,7 @@ import java.util.Date;
 public class AuditEntity implements Serializable {
 
     @Id
-   // @GeneratedValue(strategy = GenerationType.SEQUENCE)
-    @GeneratedValue(generator = "sequenceIdGenerator")
-    @GenericGenerator(
-            name = "sequenceIdGenerator", 
-            strategy = "sequence",
-            parameters = @Parameter (
-                    name = SequenceStyleGenerator.CONFIG_SEQUENCE_PER_ENTITY_SUFFIX,
-                    value = "_seq"))
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(name = "created_at", columnDefinition = "DATETIME  DEFAULT CURRENT_TIMESTAMP", updatable = false)

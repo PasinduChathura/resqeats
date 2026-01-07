@@ -1,6 +1,7 @@
 package com.ffms.resqeats.config;
 
 import com.ffms.resqeats.jwt.JwtUtils;
+import com.ffms.resqeats.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;
@@ -14,6 +15,7 @@ import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
 import org.springframework.messaging.support.MessageHeaderAccessor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -22,6 +24,15 @@ import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBr
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
+import java.security.Principal;
+import java.util.UUID;
+
+/**
+ * WebSocket configuration with authentication and authorization.
+ * 
+ * HIGH-004 FIX: Added subscription authorization to prevent users from 
+ * subscribing to topics they shouldn't have access to.
+ */
 @Configuration
 @EnableWebSocketMessageBroker
 @Order(Ordered.HIGHEST_PRECEDENCE + 99)
@@ -63,7 +74,11 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
             public Message<?> preSend(Message<?> message, MessageChannel channel) {
                 StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
                 
-                if (accessor != null && StompCommand.CONNECT.equals(accessor.getCommand())) {
+                if (accessor == null) {
+                    return message;
+                }
+                
+                if (StompCommand.CONNECT.equals(accessor.getCommand())) {
                     // Extract JWT token from header
                     String authHeader = accessor.getFirstNativeHeader("Authorization");
                     
@@ -90,8 +105,97 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                     }
                 }
                 
+                // HIGH-004 FIX: Authorize subscription to user-specific topics
+                if (StompCommand.SUBSCRIBE.equals(accessor.getCommand())) {
+                    String destination = accessor.getDestination();
+                    Principal user = accessor.getUser();
+                    
+                    if (destination != null && user != null) {
+                        authorizeSubscription(destination, user);
+                    } else if (destination != null && !isPublicTopic(destination)) {
+                        // Unauthenticated users can't subscribe to non-public topics
+                        log.warn("Unauthenticated subscription attempt to: {}", destination);
+                        throw new AccessDeniedException("Authentication required for this subscription");
+                    }
+                }
+                
                 return message;
             }
         });
+    }
+    
+    /**
+     * HIGH-004 FIX: Validate subscription authorization based on topic pattern.
+     * - /user/{userId}/... → Only the user themselves can subscribe
+     * - /topic/orders/{outletId} → Only outlet staff or admins
+     * - /topic/order/{orderId} → User must own the order (handled in service layer)
+     * - /topic/inventory/{outletId} → Only outlet staff or admins
+     */
+    private void authorizeSubscription(String destination, Principal principal) {
+        if (!(principal instanceof UsernamePasswordAuthenticationToken auth)) {
+            if (!isPublicTopic(destination)) {
+                throw new AccessDeniedException("Authentication required");
+            }
+            return;
+        }
+        
+        Object principalObj = auth.getPrincipal();
+        if (!(principalObj instanceof CustomUserDetails userDetails)) {
+            return;
+        }
+        
+        // User-specific queues - must match user ID
+        if (destination.startsWith("/user/")) {
+            String[] parts = destination.split("/");
+            if (parts.length >= 3) {
+                String destUserId = parts[2];
+                UUID actualUserId = userDetails.getId();
+                
+                // Allow if user ID matches or if user is admin
+                if (!destUserId.equals(actualUserId.toString()) && !hasAdminRole(userDetails)) {
+                    log.warn("User {} attempted to subscribe to another user's queue: {}", 
+                            actualUserId, destination);
+                    throw new AccessDeniedException("Cannot subscribe to another user's queue");
+                }
+            }
+        }
+        
+        // Outlet-specific topics (orders, inventory)
+        if (destination.matches("/topic/(orders|inventory)/.*")) {
+            String[] parts = destination.split("/");
+            if (parts.length >= 4) {
+                String outletIdStr = parts[3];
+                
+                // Admin/SuperAdmin can subscribe to any outlet
+                if (!hasAdminRole(userDetails)) {
+                    // Outlet users must be assigned to this outlet
+                    UUID assignedOutlet = userDetails.getOutletId();
+                    if (assignedOutlet == null || !assignedOutlet.toString().equals(outletIdStr)) {
+                        log.warn("User {} attempted to subscribe to outlet {} but is assigned to {}", 
+                                userDetails.getId(), outletIdStr, assignedOutlet);
+                        throw new AccessDeniedException("Not authorized for this outlet");
+                    }
+                }
+            }
+        }
+        
+        log.debug("Subscription authorized: {} for user {}", destination, userDetails.getUsername());
+    }
+    
+    /**
+     * Check if topic is public (doesn't require authorization)
+     */
+    private boolean isPublicTopic(String destination) {
+        // No public topics for now - all require authentication
+        return false;
+    }
+    
+    /**
+     * Check if user has admin role
+     */
+    private boolean hasAdminRole(CustomUserDetails userDetails) {
+        return userDetails.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") 
+                        || a.getAuthority().equals("ROLE_SUPER_ADMIN"));
     }
 }
