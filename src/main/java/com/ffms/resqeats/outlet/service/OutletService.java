@@ -611,15 +611,13 @@ public class OutletService {
     /**
      * Converts an Outlet entity to its list response DTO representation.
      *
-     * <p>Includes merchant association data for list display.</p>
-     *
      * @param outlet the outlet entity to convert
-     * @return the outlet as a list response DTO with merchant information
+     * @return the outlet as a list response DTO
      */
     private OutletListResponseDto toListDto(Outlet outlet) {
         log.debug("Converting outlet entity to list DTO: {}", outlet.getId());
         
-        OutletListResponseDto.OutletListResponseDtoBuilder builder = OutletListResponseDto.builder()
+        return OutletListResponseDto.builder()
                 .id(outlet.getId())
                 .merchantId(outlet.getMerchantId())
                 .name(outlet.getName())
@@ -634,17 +632,7 @@ public class OutletService {
                 .isOpen(isCurrentlyOpen(outlet.getId()))
                 .averageRating(outlet.getAverageRating())
                 .totalRatings(outlet.getTotalRatings())
-                .createdAt(outlet.getCreatedAt());
-
-        // Add merchant association data
-        if (outlet.getMerchantId() != null) {
-            merchantRepository.findById(outlet.getMerchantId()).ifPresent(merchant -> {
-                builder.merchantName(merchant.getName())
-                       .merchantLogoUrl(merchant.getLogoUrl())
-                       .merchantCategory(merchant.getCategory() != null ? merchant.getCategory().name() : null);
-            });
-        }
-
-        return builder.build();
+                .createdAt(outlet.getCreatedAt())
+                .build();
     }
 }

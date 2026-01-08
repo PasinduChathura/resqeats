@@ -7,12 +7,7 @@ import com.ffms.resqeats.order.dto.OrderDto;
 import com.ffms.resqeats.order.dto.OrderFilterDto;
 import com.ffms.resqeats.order.dto.OrderListResponseDto;
 import com.ffms.resqeats.order.entity.Order;
-import com.ffms.resqeats.order.entity.OrderItem;
-import com.ffms.resqeats.order.repository.OrderItemRepository;
 import com.ffms.resqeats.order.service.OrderService;
-import com.ffms.resqeats.outlet.repository.OutletRepository;
-import com.ffms.resqeats.merchant.repository.MerchantRepository;
-import com.ffms.resqeats.user.repository.UserRepository;
 import com.ffms.resqeats.security.CurrentUser;
 import com.ffms.resqeats.security.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
@@ -58,10 +53,6 @@ import java.util.UUID;
 public class OrderController {
 
     private final OrderService orderService;
-    private final UserRepository userRepository;
-    private final OutletRepository outletRepository;
-    private final MerchantRepository merchantRepository;
-    private final OrderItemRepository orderItemRepository;
 
     // =====================
     // Customer Endpoints
@@ -327,7 +318,7 @@ public class OrderController {
 
     // List response DTO mapping method
     private OrderListResponseDto toListDto(Order order) {
-        OrderListResponseDto.OrderListResponseDtoBuilder builder = OrderListResponseDto.builder()
+        return OrderListResponseDto.builder()
                 .id(order.getId())
                 .orderNumber(order.getOrderNumber())
                 .userId(order.getUserId())
@@ -343,36 +334,7 @@ public class OrderController {
                 .readyAt(order.getReadyAt())
                 .pickedUpAt(order.getPickedUpAt())
                 .completedAt(order.getCompletedAt())
-                .rating(order.getRating());
-
-        // Add user association data
-        if (order.getUserId() != null) {
-            userRepository.findById(order.getUserId()).ifPresent(user -> {
-                builder.userName(user.getFirstName() + " " + user.getLastName())
-                       .userEmail(user.getEmail())
-                       .userPhone(user.getPhone());
-            });
-        }
-
-        // Add outlet and merchant association data
-        if (order.getOutletId() != null) {
-            outletRepository.findById(order.getOutletId()).ifPresent(outlet -> {
-                builder.outletName(outlet.getName())
-                       .outletAddress(outlet.getAddress());
-                
-                if (outlet.getMerchantId() != null) {
-                    merchantRepository.findById(outlet.getMerchantId()).ifPresent(merchant -> {
-                        builder.merchantId(merchant.getId())
-                               .merchantName(merchant.getName());
-                    });
-                }
-            });
-        }
-
-        // Add items count
-        java.util.List<OrderItem> items = orderItemRepository.findByOrderId(order.getId());
-        builder.itemsCount(items.size());
-
-        return builder.build();
+                .rating(order.getRating())
+                .build();
     }
 }

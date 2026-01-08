@@ -709,12 +709,12 @@ public class ItemService {
      * Converts an Item entity to an ItemListResponseDto for list display.
      *
      * @param item the item entity to convert
-     * @return the item as a list response DTO with merchant association
+     * @return the item as a list response DTO
      */
     private ItemListResponseDto toListDto(Item item) {
         log.debug("Converting item to list DTO - itemId: {}", item.getId());
         
-        ItemListResponseDto.ItemListResponseDtoBuilder builder = ItemListResponseDto.builder()
+        return ItemListResponseDto.builder()
                 .id(item.getId())
                 .merchantId(item.getMerchantId())
                 .name(item.getName())
@@ -725,20 +725,7 @@ public class ItemService {
                 .discountPercentage(BigDecimal.valueOf(calculateDiscountPercent(item.getBasePrice(), item.getSalePrice())))
                 .imageUrl(item.getImageUrl())
                 .status(item.getStatus())
-                .createdAt(item.getCreatedAt());
-
-        // Add merchant association data
-        if (item.getMerchantId() != null) {
-            merchantRepository.findById(item.getMerchantId()).ifPresent(merchant -> {
-                builder.merchantName(merchant.getName())
-                       .merchantLogoUrl(merchant.getLogoUrl());
-            });
-        }
-
-        // Add available outlets count
-        long availableOutletsCount = outletItemRepository.countByItemIdAndIsAvailableTrue(item.getId());
-        builder.availableOutletsCount((int) availableOutletsCount);
-
-        return builder.build();
+                .createdAt(item.getCreatedAt())
+                .build();
     }
 }

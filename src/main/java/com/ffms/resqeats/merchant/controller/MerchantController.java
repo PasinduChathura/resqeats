@@ -72,12 +72,12 @@ public class MerchantController {
 
     @GetMapping("/merchants")
     @Operation(summary = "Search merchants")
-    public ResponseEntity<ApiResponse<PageResponse<MerchantDto>>> searchMerchants(
+    public ResponseEntity<ApiResponse<PageResponse<MerchantListResponseDto>>> searchMerchants(
             @RequestParam(required = false) String query,
             Pageable pageable) {
         log.info("Search merchants request - query: {}, page: {}", query, pageable.getPageNumber());
         try {
-            Page<MerchantDto> merchants = query != null 
+            Page<MerchantListResponseDto> merchants = query != null 
                     ? merchantService.searchMerchants(query, pageable)
                     : merchantService.getMerchantsByStatus(MerchantStatus.APPROVED, pageable);
             log.info("Found {} merchants", merchants.getTotalElements());

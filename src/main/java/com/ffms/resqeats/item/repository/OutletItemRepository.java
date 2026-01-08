@@ -45,9 +45,6 @@ public interface OutletItemRepository extends BaseScopedRepository<OutletItem> {
 
     Optional<OutletItem> findFirstByItemIdAndIsAvailableTrue(UUID itemId);
 
-    @Query("SELECT COUNT(oi) FROM OutletItem oi WHERE oi.itemId = :itemId AND oi.isAvailable = true")
-    long countByItemIdAndIsAvailableTrue(@Param("itemId") UUID itemId);
-
     // ============== PUBLIC ACCESS METHODS ==============
     // For customer-facing features
     

@@ -1,10 +1,6 @@
 package com.ffms.resqeats.user.service;
 
 import com.ffms.resqeats.common.exception.BusinessException;
-import com.ffms.resqeats.merchant.entity.Merchant;
-import com.ffms.resqeats.merchant.repository.MerchantRepository;
-import com.ffms.resqeats.outlet.entity.Outlet;
-import com.ffms.resqeats.outlet.repository.OutletRepository;
 import com.ffms.resqeats.user.dto.UpdateUserRequest;
 import com.ffms.resqeats.user.dto.UserDto;
 import com.ffms.resqeats.user.dto.UserFilterDto;
@@ -46,8 +42,6 @@ import java.util.UUID;
 public class UserService {
 
     private final UserRepository userRepository;
-    private final MerchantRepository merchantRepository;
-    private final OutletRepository outletRepository;
     private final PasswordEncoder passwordEncoder;
 
     /**
@@ -290,10 +284,10 @@ public class UserService {
      * Converts a User entity to a UserListResponseDto for list display.
      *
      * @param user the user entity
-     * @return the user list response DTO with association data
+     * @return the user list response DTO
      */
     private UserListResponseDto toListDto(User user) {
-        UserListResponseDto.UserListResponseDtoBuilder builder = UserListResponseDto.builder()
+        return UserListResponseDto.builder()
                 .id(user.getId())
                 .email(user.getEmail())
                 .phone(user.getPhone())
@@ -304,41 +298,7 @@ public class UserService {
                 .status(user.getStatus())
                 .emailVerified(user.getEmailVerified())
                 .phoneVerified(user.getPhoneVerified())
-                .createdAt(user.getCreatedAt());
-
-        // Add merchant association for MERCHANT role users
-        if (user.getRole() == UserRole.MERCHANT && user.getMerchantId() != null) {
-            merchantRepository.findById(user.getMerchantId()).ifPresent(merchant -> {
-                builder.merchantAssociation(UserListResponseDto.MerchantAssociation.builder()
-                        .merchantId(merchant.getId())
-                        .merchantName(merchant.getName())
-                        .merchantLogoUrl(merchant.getLogoUrl())
-                        .merchantContactEmail(merchant.getContactEmail())
-                        .merchantContactPhone(merchant.getContactPhone())
-                        .build());
-            });
-        }
-
-        // Add outlet association for OUTLET_USER role users
-        if (user.getRole() == UserRole.OUTLET_USER && user.getOutletId() != null) {
-            outletRepository.findById(user.getOutletId()).ifPresent(outlet -> {
-                String merchantName = null;
-                if (outlet.getMerchantId() != null) {
-                    merchantName = merchantRepository.findById(outlet.getMerchantId())
-                            .map(Merchant::getName)
-                            .orElse(null);
-                }
-                builder.outletAssociation(UserListResponseDto.OutletAssociation.builder()
-                        .outletId(outlet.getId())
-                        .outletName(outlet.getName())
-                        .outletAddress(outlet.getAddress())
-                        .outletCity(outlet.getCity())
-                        .merchantId(outlet.getMerchantId())
-                        .merchantName(merchantName)
-                        .build());
-            });
-        }
-
-        return builder.build();
+                .createdAt(user.getCreatedAt())
+                .build();
     }
 }

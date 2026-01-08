@@ -10,7 +10,6 @@ import com.ffms.resqeats.merchant.entity.Merchant;
 import com.ffms.resqeats.merchant.enums.MerchantStatus;
 import com.ffms.resqeats.merchant.repository.MerchantRepository;
 import com.ffms.resqeats.merchant.specification.MerchantSpecification;
-import com.ffms.resqeats.outlet.repository.OutletRepository;
 import com.ffms.resqeats.user.entity.User;
 import com.ffms.resqeats.user.enums.UserRole;
 import com.ffms.resqeats.user.repository.UserRepository;
@@ -49,7 +48,6 @@ public class MerchantService {
 
     private final MerchantRepository merchantRepository;
     private final UserRepository userRepository;
-    private final OutletRepository outletRepository;
 
     /**
      * Registers a new merchant with pending approval status.
@@ -405,10 +403,10 @@ public class MerchantService {
      * Converts a Merchant entity to a MerchantListResponseDto for list display.
      *
      * @param merchant the merchant entity to convert
-     * @return the merchant list response DTO with owner and outlet count data
+     * @return the merchant list response DTO
      */
     private MerchantListResponseDto toListDto(Merchant merchant) {
-        MerchantListResponseDto.MerchantListResponseDtoBuilder builder = MerchantListResponseDto.builder()
+        return MerchantListResponseDto.builder()
                 .id(merchant.getId())
                 .name(merchant.getName())
                 .legalName(merchant.getLegalName())
@@ -418,21 +416,7 @@ public class MerchantService {
                 .contactPhone(merchant.getContactPhone())
                 .status(merchant.getStatus())
                 .approvedAt(merchant.getApprovedAt())
-                .createdAt(merchant.getCreatedAt());
-
-        // Add owner user information
-        if (merchant.getOwnerUserId() != null) {
-            userRepository.findById(merchant.getOwnerUserId()).ifPresent(owner -> {
-                builder.ownerUserId(owner.getId())
-                       .ownerName(owner.getFirstName() + " " + owner.getLastName())
-                       .ownerEmail(owner.getEmail());
-            });
-        }
-
-        // Add outlet count
-        long outletCount = outletRepository.countActiveOutletsByMerchantId(merchant.getId());
-        builder.outletCount((int) outletCount);
-
-        return builder.build();
+                .createdAt(merchant.getCreatedAt())
+                .build();
     }
 }
