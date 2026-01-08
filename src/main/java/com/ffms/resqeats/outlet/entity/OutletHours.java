@@ -5,6 +5,9 @@ import com.ffms.resqeats.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
+import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.FilterDef;
+import org.hibernate.annotations.ParamDef;
 
 import java.time.LocalTime;
 import java.util.UUID;
@@ -17,6 +20,8 @@ import java.util.UUID;
 @Table(name = "outlet_hours", indexes = {
         @Index(name = "idx_outlet_hours_outlet", columnList = "outlet_id")
 })
+@FilterDef(name = "outletHoursOutletFilter", parameters = @ParamDef(name = "outletId", type = String.class))
+@Filter(name = "outletHoursOutletFilter", condition = "outlet_id = :outletId")
 @Getter
 @Setter
 @NoArgsConstructor

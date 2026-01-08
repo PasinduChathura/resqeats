@@ -8,6 +8,9 @@ import com.ffms.resqeats.security.tenant.TenantScopeType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
+import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.FilterDef;
+import org.hibernate.annotations.ParamDef;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -32,6 +35,8 @@ import java.util.UUID;
         @Index(name = "idx_payment_status", columnList = "status"),
         @Index(name = "idx_payment_ipg_txn", columnList = "ipg_transaction_id")
 })
+@FilterDef(name = "paymentOrderFilter", parameters = @ParamDef(name = "orderId", type = String.class))
+@Filter(name = "paymentOrderFilter", condition = "order_id = :orderId")
 @TenantScoped(value = TenantScopeType.USER, allowNull = true)
 @Getter
 @Setter

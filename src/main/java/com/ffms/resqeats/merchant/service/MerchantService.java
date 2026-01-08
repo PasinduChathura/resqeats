@@ -3,10 +3,14 @@ package com.ffms.resqeats.merchant.service;
 import com.ffms.resqeats.common.exception.BusinessException;
 import com.ffms.resqeats.merchant.dto.CreateMerchantRequest;
 import com.ffms.resqeats.merchant.dto.MerchantDto;
+import com.ffms.resqeats.merchant.dto.MerchantFilterDto;
+import com.ffms.resqeats.merchant.dto.MerchantListResponseDto;
 import com.ffms.resqeats.merchant.dto.UpdateMerchantRequest;
 import com.ffms.resqeats.merchant.entity.Merchant;
 import com.ffms.resqeats.merchant.enums.MerchantStatus;
 import com.ffms.resqeats.merchant.repository.MerchantRepository;
+import com.ffms.resqeats.merchant.specification.MerchantSpecification;
+import com.ffms.resqeats.outlet.repository.OutletRepository;
 import com.ffms.resqeats.user.entity.User;
 import com.ffms.resqeats.user.enums.UserRole;
 import com.ffms.resqeats.user.repository.UserRepository;
@@ -45,6 +49,7 @@ public class MerchantService {
 
     private final MerchantRepository merchantRepository;
     private final UserRepository userRepository;
+    private final OutletRepository outletRepository;
 
     /**
      * Registers a new merchant with pending approval status.
@@ -281,12 +286,28 @@ public class MerchantService {
      * Retrieves all merchants with pagination (ADMIN only).
      *
      * @param pageable pagination parameters
-     * @return a page of merchant DTOs
+     * @return a page of merchant list response DTOs
      */
-    public Page<MerchantDto> getAllMerchants(Pageable pageable) {
+    public Page<MerchantListResponseDto> getAllMerchants(Pageable pageable) {
         log.info("Retrieving all merchants - page: {}, size: {}", 
                 pageable.getPageNumber(), pageable.getPageSize());
-        Page<MerchantDto> merchants = merchantRepository.findAll(pageable).map(this::toDto);
+        Page<MerchantListResponseDto> merchants = merchantRepository.findAll(pageable).map(this::toListDto);
+        log.info("Retrieved {} merchants", merchants.getTotalElements());
+        return merchants;
+    }
+
+    /**
+     * Retrieves all merchants with comprehensive filtering (ADMIN only).
+     *
+     * @param filter the filter criteria
+     * @param pageable pagination parameters
+     * @return a page of merchant list response DTOs
+     */
+    public Page<MerchantListResponseDto> getAllMerchants(MerchantFilterDto filter, Pageable pageable) {
+        log.info("Retrieving all merchants with filter: {}, page: {}, size: {}", 
+                filter, pageable.getPageNumber(), pageable.getPageSize());
+        Page<MerchantListResponseDto> merchants = merchantRepository.findAll(MerchantSpecification.filterBy(filter), pageable)
+                .map(this::toListDto);
         log.info("Retrieved {} merchants", merchants.getTotalElements());
         return merchants;
     }
@@ -296,12 +317,12 @@ public class MerchantService {
      *
      * @param status the merchant status to filter by
      * @param pageable pagination parameters
-     * @return a page of merchant DTOs matching the status
+     * @return a page of merchant list response DTOs matching the status
      */
-    public Page<MerchantDto> getMerchantsByStatus(MerchantStatus status, Pageable pageable) {
+    public Page<MerchantListResponseDto> getMerchantsByStatus(MerchantStatus status, Pageable pageable) {
         log.info("Retrieving merchants by status: {} - page: {}, size: {}", 
                 status, pageable.getPageNumber(), pageable.getPageSize());
-        Page<MerchantDto> merchants = merchantRepository.findByStatus(status, pageable).map(this::toDto);
+        Page<MerchantListResponseDto> merchants = merchantRepository.findByStatus(status, pageable).map(this::toListDto);
         log.info("Retrieved {} merchants with status: {}", merchants.getTotalElements(), status);
         return merchants;
     }
@@ -311,13 +332,13 @@ public class MerchantService {
      *
      * @param query the search query for merchant name
      * @param pageable pagination parameters
-     * @return a page of merchant DTOs matching the search query
+     * @return a page of merchant list response DTOs matching the search query
      */
-    public Page<MerchantDto> searchMerchants(String query, Pageable pageable) {
+    public Page<MerchantListResponseDto> searchMerchants(String query, Pageable pageable) {
         log.info("Searching merchants with query: '{}' - page: {}, size: {}", 
                 query, pageable.getPageNumber(), pageable.getPageSize());
-        Page<MerchantDto> merchants = merchantRepository.findByNameContainingIgnoreCase(query, pageable)
-                .map(this::toDto);
+        Page<MerchantListResponseDto> merchants = merchantRepository.findByNameContainingIgnoreCase(query, pageable)
+                .map(this::toListDto);
         log.info("Found {} merchants matching query: '{}'", merchants.getTotalElements(), query);
         return merchants;
     }
@@ -378,5 +399,40 @@ public class MerchantService {
                 .approvedAt(merchant.getApprovedAt())
                 .createdAt(merchant.getCreatedAt())
                 .build();
+    }
+
+    /**
+     * Converts a Merchant entity to a MerchantListResponseDto for list display.
+     *
+     * @param merchant the merchant entity to convert
+     * @return the merchant list response DTO with owner and outlet count data
+     */
+    private MerchantListResponseDto toListDto(Merchant merchant) {
+        MerchantListResponseDto.MerchantListResponseDtoBuilder builder = MerchantListResponseDto.builder()
+                .id(merchant.getId())
+                .name(merchant.getName())
+                .legalName(merchant.getLegalName())
+                .category(merchant.getCategory())
+                .logoUrl(merchant.getLogoUrl())
+                .contactEmail(merchant.getContactEmail())
+                .contactPhone(merchant.getContactPhone())
+                .status(merchant.getStatus())
+                .approvedAt(merchant.getApprovedAt())
+                .createdAt(merchant.getCreatedAt());
+
+        // Add owner user information
+        if (merchant.getOwnerUserId() != null) {
+            userRepository.findById(merchant.getOwnerUserId()).ifPresent(owner -> {
+                builder.ownerUserId(owner.getId())
+                       .ownerName(owner.getFirstName() + " " + owner.getLastName())
+                       .ownerEmail(owner.getEmail());
+            });
+        }
+
+        // Add outlet count
+        long outletCount = outletRepository.countActiveOutletsByMerchantId(merchant.getId());
+        builder.outletCount((int) outletCount);
+
+        return builder.build();
     }
 }

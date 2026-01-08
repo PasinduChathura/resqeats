@@ -4,6 +4,8 @@ import com.ffms.resqeats.common.exception.BusinessException;
 import com.ffms.resqeats.inventory.service.InventoryService;
 import com.ffms.resqeats.item.dto.CreateItemRequest;
 import com.ffms.resqeats.item.dto.ItemDto;
+import com.ffms.resqeats.item.dto.ItemFilterDto;
+import com.ffms.resqeats.item.dto.ItemListResponseDto;
 import com.ffms.resqeats.item.dto.OutletItemDto;
 import com.ffms.resqeats.item.dto.UpdateItemRequest;
 import com.ffms.resqeats.item.entity.Item;
@@ -12,6 +14,7 @@ import com.ffms.resqeats.item.enums.ItemStatus;
 import com.ffms.resqeats.item.enums.ItemType;
 import com.ffms.resqeats.item.repository.ItemRepository;
 import com.ffms.resqeats.item.repository.OutletItemRepository;
+import com.ffms.resqeats.item.specification.ItemSpecification;
 import com.ffms.resqeats.merchant.entity.Merchant;
 import com.ffms.resqeats.merchant.repository.MerchantRepository;
 import com.ffms.resqeats.outlet.entity.Outlet;
@@ -430,6 +433,22 @@ public class ItemService {
     }
 
     /**
+     * Retrieves all items with comprehensive filtering.
+     *
+     * @param filter the filter criteria
+     * @param pageable the pagination parameters
+     * @return a page of filtered items as list response DTOs
+     */
+    public Page<ItemListResponseDto> getAllItems(ItemFilterDto filter, Pageable pageable) {
+        log.info("Retrieving all items with filter: {}, page: {}, size: {}", 
+                filter, pageable.getPageNumber(), pageable.getPageSize());
+        Page<ItemListResponseDto> items = itemRepository.findAll(ItemSpecification.filterBy(filter), pageable)
+                .map(this::toListDto);
+        log.info("Retrieved {} items", items.getTotalElements());
+        return items;
+    }
+
+    /**
      * Searches for items by name with pagination support.
      *
      * <p>Performs a case-insensitive search on item names and returns matching
@@ -684,5 +703,42 @@ public class ItemService {
                 .divide(basePrice, 2, RoundingMode.HALF_UP)
                 .multiply(BigDecimal.valueOf(100))
                 .intValue();
+    }
+
+    /**
+     * Converts an Item entity to an ItemListResponseDto for list display.
+     *
+     * @param item the item entity to convert
+     * @return the item as a list response DTO with merchant association
+     */
+    private ItemListResponseDto toListDto(Item item) {
+        log.debug("Converting item to list DTO - itemId: {}", item.getId());
+        
+        ItemListResponseDto.ItemListResponseDtoBuilder builder = ItemListResponseDto.builder()
+                .id(item.getId())
+                .merchantId(item.getMerchantId())
+                .name(item.getName())
+                .category(item.getCategory())
+                .itemType(item.getItemType())
+                .basePrice(item.getBasePrice())
+                .salePrice(item.getSalePrice())
+                .discountPercentage(BigDecimal.valueOf(calculateDiscountPercent(item.getBasePrice(), item.getSalePrice())))
+                .imageUrl(item.getImageUrl())
+                .status(item.getStatus())
+                .createdAt(item.getCreatedAt());
+
+        // Add merchant association data
+        if (item.getMerchantId() != null) {
+            merchantRepository.findById(item.getMerchantId()).ifPresent(merchant -> {
+                builder.merchantName(merchant.getName())
+                       .merchantLogoUrl(merchant.getLogoUrl());
+            });
+        }
+
+        // Add available outlets count
+        long availableOutletsCount = outletItemRepository.countByItemIdAndIsAvailableTrue(item.getId());
+        builder.availableOutletsCount((int) availableOutletsCount);
+
+        return builder.build();
     }
 }

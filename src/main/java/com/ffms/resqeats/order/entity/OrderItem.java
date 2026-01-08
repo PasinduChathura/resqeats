@@ -6,6 +6,9 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.*;
+import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.FilterDef;
+import org.hibernate.annotations.ParamDef;
 
 import java.math.BigDecimal;
 import java.util.UUID;
@@ -19,6 +22,8 @@ import java.util.UUID;
         @Index(name = "idx_order_item_order", columnList = "order_id"),
         @Index(name = "idx_order_item_item", columnList = "item_id")
 })
+@FilterDef(name = "orderItemOrderFilter", parameters = @ParamDef(name = "orderId", type = String.class))
+@Filter(name = "orderItemOrderFilter", condition = "order_id = :orderId")
 @Getter
 @Setter
 @NoArgsConstructor

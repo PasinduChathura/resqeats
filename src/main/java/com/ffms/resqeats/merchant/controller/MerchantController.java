@@ -4,6 +4,8 @@ import com.ffms.resqeats.common.dto.ApiResponse;
 import com.ffms.resqeats.common.dto.PageResponse;
 import com.ffms.resqeats.merchant.dto.CreateMerchantRequest;
 import com.ffms.resqeats.merchant.dto.MerchantDto;
+import com.ffms.resqeats.merchant.dto.MerchantFilterDto;
+import com.ffms.resqeats.merchant.dto.MerchantListResponseDto;
 import com.ffms.resqeats.merchant.dto.UpdateMerchantRequest;
 import com.ffms.resqeats.merchant.enums.MerchantStatus;
 import com.ffms.resqeats.merchant.service.MerchantService;
@@ -27,23 +29,19 @@ import java.util.UUID;
 
 /**
  * Merchant controller per SRS Section 6.2.
- *
+ * 
  * Public Endpoints:
  * GET /merchants/{id} - Get merchant details
  * GET /merchants - Search merchants
  *
- * User Endpoints:
- * POST /merchants - Register as merchant
- *
- * Merchant Endpoints:
- * GET /merchants/me - Get my merchant
- * PUT /merchants/me - Update my merchant
- *
- * Admin Endpoints:
- * GET /admin/merchants - List all merchants
- * POST /admin/merchants/{id}/approve - Approve merchant
- * POST /admin/merchants/{id}/reject - Reject merchant
- * POST /admin/merchants/{id}/suspend - Suspend merchant
+ * Scoped Endpoints:
+ * GET /merchants/list - List merchants with filters (scoped by role)
+ * POST /merchants - Register as merchant (USER)
+ * GET /merchants/me - Get my merchant (MERCHANT)
+ * PUT /merchants/me - Update my merchant (MERCHANT)
+ * POST /merchants/{id}/approve - Approve merchant (ADMIN)
+ * POST /merchants/{id}/reject - Reject merchant (ADMIN)
+ * POST /merchants/{id}/suspend - Suspend merchant (ADMIN)
  */
 @RestController
 @RequestMapping("/api/v1")
@@ -149,77 +147,79 @@ public class MerchantController {
     }
 
     // =====================
-    // Admin Endpoints
+    // Merchants List Endpoints
     // =====================
 
-    @GetMapping("/admin/merchants")
-    @Operation(summary = "List all merchants")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<PageResponse<MerchantDto>>> getAllMerchants(
-            @RequestParam(required = false) MerchantStatus status,
+    @GetMapping("/merchants/list")
+    @Operation(summary = "List merchants with filters")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<PageResponse<MerchantListResponseDto>>> getMerchants(
+            MerchantFilterDto filter,
             Pageable pageable) {
-        log.info("Admin: List all merchants request - status: {}, page: {}", status, pageable.getPageNumber());
+        log.info("List merchants request - filter: {}, page: {}", filter, pageable.getPageNumber());
         try {
-            Page<MerchantDto> merchants = status != null
-                    ? merchantService.getMerchantsByStatus(status, pageable)
-                    : merchantService.getAllMerchants(pageable);
-            log.info("Admin: Retrieved {} merchants", merchants.getTotalElements());
+            Page<MerchantListResponseDto> merchants = merchantService.getAllMerchants(filter, pageable);
+            log.info("Retrieved {} merchants", merchants.getTotalElements());
             return ResponseEntity.ok(ApiResponse.success(PageResponse.from(merchants)));
         } catch (Exception e) {
-            log.error("Admin: Failed to list merchants - Error: {}", e.getMessage());
+            log.error("Failed to list merchants - Error: {}", e.getMessage());
             throw e;
         }
     }
 
-    @PostMapping("/admin/merchants/{id}/approve")
+    // =====================
+    // Merchant Action Endpoints
+    // =====================
+
+    @PostMapping("/merchants/{id}/approve")
     @Operation(summary = "Approve merchant")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<MerchantDto>> approveMerchant(
             @CurrentUser UserPrincipal currentUser,
             @PathVariable UUID id) {
-        log.info("Admin: Approve merchant request for merchantId: {} by adminId: {}", id, currentUser.getId());
+        log.info("Approve merchant request for merchantId: {} by adminId: {}", id, currentUser.getId());
         try {
             MerchantDto merchant = merchantService.approveMerchant(id, currentUser.getId());
-            log.info("Admin: Merchant approved successfully: {}", id);
+            log.info("Merchant approved successfully: {}", id);
             return ResponseEntity.ok(ApiResponse.success(merchant, "Merchant approved"));
         } catch (Exception e) {
-            log.error("Admin: Failed to approve merchant: {} - Error: {}", id, e.getMessage());
+            log.error("Failed to approve merchant: {} - Error: {}", id, e.getMessage());
             throw e;
         }
     }
 
-    @PostMapping("/admin/merchants/{id}/reject")
+    @PostMapping("/merchants/{id}/reject")
     @Operation(summary = "Reject merchant")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<MerchantDto>> rejectMerchant(
             @CurrentUser UserPrincipal currentUser,
             @PathVariable UUID id,
             @Valid @RequestBody RejectRequest request) {
-        log.info("Admin: Reject merchant request for merchantId: {} - Reason: {}", id, request.getReason());
+        log.info("Reject merchant request for merchantId: {} - Reason: {}", id, request.getReason());
         try {
             MerchantDto merchant = merchantService.rejectMerchant(id, currentUser.getId(), request.getReason());
-            log.info("Admin: Merchant rejected: {}", id);
+            log.info("Merchant rejected: {}", id);
             return ResponseEntity.ok(ApiResponse.success(merchant, "Merchant rejected"));
         } catch (Exception e) {
-            log.error("Admin: Failed to reject merchant: {} - Error: {}", id, e.getMessage());
+            log.error("Failed to reject merchant: {} - Error: {}", id, e.getMessage());
             throw e;
         }
     }
 
-    @PostMapping("/admin/merchants/{id}/suspend")
+    @PostMapping("/merchants/{id}/suspend")
     @Operation(summary = "Suspend merchant")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<MerchantDto>> suspendMerchant(
             @CurrentUser UserPrincipal currentUser,
             @PathVariable UUID id,
             @Valid @RequestBody SuspendRequest request) {
-        log.info("Admin: Suspend merchant request for merchantId: {} - Reason: {}", id, request.getReason());
+        log.info("Suspend merchant request for merchantId: {} - Reason: {}", id, request.getReason());
         try {
             MerchantDto merchant = merchantService.suspendMerchant(id, currentUser.getId(), request.getReason());
-            log.info("Admin: Merchant suspended: {}", id);
+            log.info("Merchant suspended: {}", id);
             return ResponseEntity.ok(ApiResponse.success(merchant, "Merchant suspended"));
         } catch (Exception e) {
-            log.error("Admin: Failed to suspend merchant: {} - Error: {}", id, e.getMessage());
+            log.error("Failed to suspend merchant: {} - Error: {}", id, e.getMessage());
             throw e;
         }
     }

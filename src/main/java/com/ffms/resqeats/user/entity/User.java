@@ -9,6 +9,11 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Size;
 import lombok.*;
+import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.FilterDef;
+import org.hibernate.annotations.FilterDefs;
+import org.hibernate.annotations.Filters;
+import org.hibernate.annotations.ParamDef;
 
 import java.util.UUID;
 
@@ -16,11 +21,23 @@ import java.util.UUID;
  * User entity per SRS Section 7.2.
  * Supports phone/OTP, email/password, and OAuth2 authentication.
  * Enforces RBAC: ADMIN, MERCHANT, OUTLET_USER, USER.
+ * 
+ * HIBERNATE FILTERS (applied at repository level via TenantFilterAspect):
+ * - userMerchantFilter: MERCHANT role sees users within their merchant
+ * - userOutletFilter: OUTLET_USER role sees users within their outlet
  */
 @Entity
 @Table(name = "users", uniqueConstraints = {
         @UniqueConstraint(columnNames = "phone"),
         @UniqueConstraint(columnNames = "email")
+})
+@FilterDefs({
+    @FilterDef(name = "userMerchantFilter", parameters = @ParamDef(name = "merchantId", type = String.class)),
+    @FilterDef(name = "userOutletFilter", parameters = @ParamDef(name = "outletId", type = String.class))
+})
+@Filters({
+    @Filter(name = "userMerchantFilter", condition = "merchant_id = :merchantId"),
+    @Filter(name = "userOutletFilter", condition = "outlet_id = :outletId")
 })
 @Getter
 @Setter

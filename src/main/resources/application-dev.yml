@@ -8,6 +8,8 @@
 # ================================================================================
 
 spring:
+  config:
+    import: optional:file:.env[.properties]
   # ==================== Database Configuration ====================
   datasource:
     url: jdbc:mysql://localhost:3306/resqeats?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
@@ -42,14 +44,20 @@ spring:
     username: test@resqeats.com
     password: test-password
 
+  # ==================== Session/Cookie Configuration ====================
+  # Local dev uses plain HTTP, so cookies cannot be marked 'secure'.
+  session:
+    cookie:
+      secure: false
+
   # ==================== OAuth2 Configuration ====================
   security:
     oauth2:
       client:
         registration:
           google:
-            client-id: ${GOOGLE_CLIENT_ID}
-            client-secret: ${GOOGLE_CLIENT_SECRET}
+            client-id: ${GOOGLE_CLIENT_ID:?GOOGLE_CLIENT_ID is required}
+            client-secret: ${GOOGLE_CLIENT_SECRET:?GOOGLE_CLIENT_SECRET is required}
             scope: profile,email
             redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
 

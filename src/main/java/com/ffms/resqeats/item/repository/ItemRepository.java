@@ -7,6 +7,7 @@ import com.ffms.resqeats.item.enums.ItemStatus;
 import com.ffms.resqeats.security.context.SecurityContextHolder;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -24,7 +25,7 @@ import java.util.UUID;
  * - USER: Read access to ACTIVE items only (public data)
  */
 @Repository
-public interface ItemRepository extends BaseScopedRepository<Item> {
+public interface ItemRepository extends BaseScopedRepository<Item>, JpaSpecificationExecutor<Item> {
 
     // ============== MERCHANT-SCOPED METHODS ==============
     // These are automatically filtered by merchantFilter for MERCHANT role

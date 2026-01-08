@@ -1,12 +1,19 @@
 package com.ffms.resqeats.user.service;
 
 import com.ffms.resqeats.common.exception.BusinessException;
+import com.ffms.resqeats.merchant.entity.Merchant;
+import com.ffms.resqeats.merchant.repository.MerchantRepository;
+import com.ffms.resqeats.outlet.entity.Outlet;
+import com.ffms.resqeats.outlet.repository.OutletRepository;
 import com.ffms.resqeats.user.dto.UpdateUserRequest;
 import com.ffms.resqeats.user.dto.UserDto;
+import com.ffms.resqeats.user.dto.UserFilterDto;
+import com.ffms.resqeats.user.dto.UserListResponseDto;
 import com.ffms.resqeats.user.entity.User;
 import com.ffms.resqeats.user.enums.UserRole;
 import com.ffms.resqeats.user.enums.UserStatus;
 import com.ffms.resqeats.user.repository.UserRepository;
+import com.ffms.resqeats.user.specification.UserSpecification;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -39,6 +46,8 @@ import java.util.UUID;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final MerchantRepository merchantRepository;
+    private final OutletRepository outletRepository;
     private final PasswordEncoder passwordEncoder;
 
     /**
@@ -122,14 +131,15 @@ public class UserService {
     }
 
     /**
-     * Retrieves all users with pagination (admin operation).
+     * Retrieves all users with pagination and filtering (admin operation).
      *
+     * @param filter the filter criteria
      * @param pageable the pagination parameters
-     * @return a page of user DTOs
+     * @return a page of user list response DTOs
      */
-    public Page<UserDto> getAllUsers(Pageable pageable) {
-        log.info("Retrieving all users with pagination: page={}, size={}", pageable.getPageNumber(), pageable.getPageSize());
-        Page<UserDto> result = userRepository.findAll(pageable).map(this::toDto);
+    public Page<UserListResponseDto> getAllUsers(UserFilterDto filter, Pageable pageable) {
+        log.info("Retrieving all users with filter: {}, page={}, size={}", filter, pageable.getPageNumber(), pageable.getPageSize());
+        Page<UserListResponseDto> result = userRepository.findAll(UserSpecification.filterBy(filter), pageable).map(this::toListDto);
         log.debug("Retrieved {} users", result.getTotalElements());
         return result;
     }
@@ -139,12 +149,12 @@ public class UserService {
      *
      * @param query the search query (matches email, first name, or last name)
      * @param pageable the pagination parameters
-     * @return a page of matching user DTOs
+     * @return a page of matching user list response DTOs
      */
-    public Page<UserDto> searchUsers(String query, Pageable pageable) {
+    public Page<UserListResponseDto> searchUsers(String query, Pageable pageable) {
         log.info("Searching users with query: '{}', page={}, size={}", query, pageable.getPageNumber(), pageable.getPageSize());
-        Page<UserDto> result = userRepository.findByEmailContainingIgnoreCaseOrFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(
-                query, query, query, pageable).map(this::toDto);
+        Page<UserListResponseDto> result = userRepository.findByEmailContainingIgnoreCaseOrFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(
+                query, query, query, pageable).map(this::toListDto);
         log.debug("Search returned {} users matching query: '{}'", result.getTotalElements(), query);
         return result;
     }
@@ -274,5 +284,61 @@ public class UserService {
                 .outletId(user.getOutletId())
                 .createdAt(user.getCreatedAt())
                 .build();
+    }
+
+    /**
+     * Converts a User entity to a UserListResponseDto for list display.
+     *
+     * @param user the user entity
+     * @return the user list response DTO with association data
+     */
+    private UserListResponseDto toListDto(User user) {
+        UserListResponseDto.UserListResponseDtoBuilder builder = UserListResponseDto.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .phone(user.getPhone())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .profileImageUrl(user.getProfileImageUrl())
+                .role(user.getRole())
+                .status(user.getStatus())
+                .emailVerified(user.getEmailVerified())
+                .phoneVerified(user.getPhoneVerified())
+                .createdAt(user.getCreatedAt());
+
+        // Add merchant association for MERCHANT role users
+        if (user.getRole() == UserRole.MERCHANT && user.getMerchantId() != null) {
+            merchantRepository.findById(user.getMerchantId()).ifPresent(merchant -> {
+                builder.merchantAssociation(UserListResponseDto.MerchantAssociation.builder()
+                        .merchantId(merchant.getId())
+                        .merchantName(merchant.getName())
+                        .merchantLogoUrl(merchant.getLogoUrl())
+                        .merchantContactEmail(merchant.getContactEmail())
+                        .merchantContactPhone(merchant.getContactPhone())
+                        .build());
+            });
+        }
+
+        // Add outlet association for OUTLET_USER role users
+        if (user.getRole() == UserRole.OUTLET_USER && user.getOutletId() != null) {
+            outletRepository.findById(user.getOutletId()).ifPresent(outlet -> {
+                String merchantName = null;
+                if (outlet.getMerchantId() != null) {
+                    merchantName = merchantRepository.findById(outlet.getMerchantId())
+                            .map(Merchant::getName)
+                            .orElse(null);
+                }
+                builder.outletAssociation(UserListResponseDto.OutletAssociation.builder()
+                        .outletId(outlet.getId())
+                        .outletName(outlet.getName())
+                        .outletAddress(outlet.getAddress())
+                        .outletCity(outlet.getCity())
+                        .merchantId(outlet.getMerchantId())
+                        .merchantName(merchantName)
+                        .build());
+            });
+        }
+
+        return builder.build();
     }
 }

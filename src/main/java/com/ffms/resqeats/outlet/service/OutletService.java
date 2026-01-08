@@ -7,12 +7,15 @@ import com.ffms.resqeats.merchant.enums.MerchantStatus;
 import com.ffms.resqeats.merchant.repository.MerchantRepository;
 import com.ffms.resqeats.outlet.dto.CreateOutletRequest;
 import com.ffms.resqeats.outlet.dto.OutletDto;
+import com.ffms.resqeats.outlet.dto.OutletFilterDto;
+import com.ffms.resqeats.outlet.dto.OutletListResponseDto;
 import com.ffms.resqeats.outlet.dto.UpdateOutletRequest;
 import com.ffms.resqeats.outlet.entity.Outlet;
 import com.ffms.resqeats.outlet.entity.OutletHours;
 import com.ffms.resqeats.outlet.enums.OutletStatus;
 import com.ffms.resqeats.outlet.repository.OutletHoursRepository;
 import com.ffms.resqeats.outlet.repository.OutletRepository;
+import com.ffms.resqeats.outlet.specification.OutletSpecification;
 import com.ffms.resqeats.user.entity.User;
 import com.ffms.resqeats.user.enums.UserRole;
 import com.ffms.resqeats.user.repository.UserRepository;
@@ -459,16 +462,32 @@ public class OutletService {
     }
 
     /**
+     * Retrieves all outlets with comprehensive filtering.
+     *
+     * @param filter the filter criteria
+     * @param pageable the pagination parameters
+     * @return a page of filtered outlets as list response DTOs
+     */
+    public Page<OutletListResponseDto> getAllOutlets(OutletFilterDto filter, Pageable pageable) {
+        log.info("Retrieving all outlets with filter: {}, page: {}, size: {}", 
+                filter, pageable.getPageNumber(), pageable.getPageSize());
+        Page<OutletListResponseDto> outlets = outletRepository.findAll(OutletSpecification.filterBy(filter), pageable)
+                .map(this::toListDto);
+        log.info("Retrieved {} outlets", outlets.getTotalElements());
+        return outlets;
+    }
+
+    /**
      * Retrieves a paginated list of active outlets for customer discovery.
      *
      * @param pageable the pagination parameters
-     * @return a page of active outlets as DTOs
+     * @return a page of active outlets as list response DTOs
      */
-    public Page<OutletDto> getActiveOutlets(Pageable pageable) {
+    public Page<OutletListResponseDto> getActiveOutlets(Pageable pageable) {
         log.info("Retrieving active outlets, page: {}, size: {}", 
                 pageable.getPageNumber(), pageable.getPageSize());
-        Page<OutletDto> outlets = outletRepository.findByStatus(OutletStatus.ACTIVE, pageable)
-                .map(this::toDto);
+        Page<OutletListResponseDto> outlets = outletRepository.findByStatus(OutletStatus.ACTIVE, pageable)
+                .map(this::toListDto);
         log.info("Retrieved {} active outlets (total: {})", 
                 outlets.getNumberOfElements(), outlets.getTotalElements());
         return outlets;
@@ -479,12 +498,12 @@ public class OutletService {
      *
      * @param query the search query string
      * @param pageable the pagination parameters
-     * @return a page of matching outlets as DTOs
+     * @return a page of matching outlets as list response DTOs
      */
-    public Page<OutletDto> searchOutlets(String query, Pageable pageable) {
+    public Page<OutletListResponseDto> searchOutlets(String query, Pageable pageable) {
         log.info("Searching outlets with query: '{}', page: {}, size: {}", 
                 query, pageable.getPageNumber(), pageable.getPageSize());
-        Page<OutletDto> results = outletRepository.findByNameContainingIgnoreCase(query, pageable).map(this::toDto);
+        Page<OutletListResponseDto> results = outletRepository.findByNameContainingIgnoreCase(query, pageable).map(this::toListDto);
         log.info("Search completed - found {} results for query: '{}'", results.getTotalElements(), query);
         return results;
     }
@@ -587,5 +606,45 @@ public class OutletService {
                         .collect(Collectors.toList()))
                 .createdAt(outlet.getCreatedAt())
                 .build();
+    }
+
+    /**
+     * Converts an Outlet entity to its list response DTO representation.
+     *
+     * <p>Includes merchant association data for list display.</p>
+     *
+     * @param outlet the outlet entity to convert
+     * @return the outlet as a list response DTO with merchant information
+     */
+    private OutletListResponseDto toListDto(Outlet outlet) {
+        log.debug("Converting outlet entity to list DTO: {}", outlet.getId());
+        
+        OutletListResponseDto.OutletListResponseDtoBuilder builder = OutletListResponseDto.builder()
+                .id(outlet.getId())
+                .merchantId(outlet.getMerchantId())
+                .name(outlet.getName())
+                .address(outlet.getAddress())
+                .city(outlet.getCity())
+                .postalCode(outlet.getPostalCode())
+                .latitude(outlet.getLatitude())
+                .longitude(outlet.getLongitude())
+                .phone(outlet.getPhone())
+                .imageUrl(outlet.getImageUrl())
+                .status(outlet.getStatus())
+                .isOpen(isCurrentlyOpen(outlet.getId()))
+                .averageRating(outlet.getAverageRating())
+                .totalRatings(outlet.getTotalRatings())
+                .createdAt(outlet.getCreatedAt());
+
+        // Add merchant association data
+        if (outlet.getMerchantId() != null) {
+            merchantRepository.findById(outlet.getMerchantId()).ifPresent(merchant -> {
+                builder.merchantName(merchant.getName())
+                       .merchantLogoUrl(merchant.getLogoUrl())
+                       .merchantCategory(merchant.getCategory() != null ? merchant.getCategory().name() : null);
+            });
+        }
+
+        return builder.build();
     }
 }

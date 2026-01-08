@@ -4,6 +4,8 @@ import com.ffms.resqeats.common.dto.ApiResponse;
 import com.ffms.resqeats.common.dto.PageResponse;
 import com.ffms.resqeats.item.dto.CreateItemRequest;
 import com.ffms.resqeats.item.dto.ItemDto;
+import com.ffms.resqeats.item.dto.ItemFilterDto;
+import com.ffms.resqeats.item.dto.ItemListResponseDto;
 import com.ffms.resqeats.item.dto.OutletItemDto;
 import com.ffms.resqeats.item.dto.UpdateItemRequest;
 import com.ffms.resqeats.item.service.ItemService;
@@ -30,20 +32,23 @@ import java.util.UUID;
 
 /**
  * Item controller per SRS Section 6.2.
+ * 
+ * All endpoints use unified paths - scope filtering is applied automatically
+ * at the repository level based on the authenticated user's role and context.
  *
  * Public Endpoints:
  * GET /outlets/{outletId}/items - Get outlet items (customer view)
  * GET /items/search - Search items
+ * GET /items/{id} - Get item details
  *
- * Merchant Endpoints:
+ * Scoped Endpoints:
+ * GET /items - List items with filters (scoped by role)
  * POST /merchants/{merchantId}/items - Create item
  * GET /merchants/{merchantId}/items - List merchant items
  * PUT /items/{id} - Update item
- *
- * Outlet Endpoints:
  * POST /outlets/{outletId}/items - Add item to outlet
  * PUT /outlets/{outletId}/items/{outletItemId} - Update outlet item
- * DELETE /outlets/{outletId}/items/{outletItemId} - Remove item from outlet
+ * DELETE /outlets/{outletId}/items/{outletItemId} - Remove from outlet
  */
 @RestController
 @RequestMapping("/api/v1")
@@ -223,6 +228,27 @@ public class ItemController {
             return ResponseEntity.ok(ApiResponse.success(null, "Item removed from outlet"));
         } catch (Exception e) {
             log.error("Failed to remove item from outlet: {} - Error: {}", outletItemId, e.getMessage());
+            throw e;
+        }
+    }
+
+    // =====================
+    // Items List Endpoint
+    // =====================
+
+    @GetMapping("/items")
+    @Operation(summary = "List items with filters (scoped by role)")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<PageResponse<ItemListResponseDto>>> getItems(
+            ItemFilterDto filter,
+            Pageable pageable) {
+        log.info("List items request - filter: {}, page: {}", filter, pageable.getPageNumber());
+        try {
+            Page<ItemListResponseDto> items = itemService.getAllItems(filter, pageable);
+            log.info("Retrieved {} items", items.getTotalElements());
+            return ResponseEntity.ok(ApiResponse.success(PageResponse.from(items)));
+        } catch (Exception e) {
+            log.error("Failed to list items - Error: {}", e.getMessage());
             throw e;
         }
     }

@@ -6,6 +6,7 @@ import com.ffms.resqeats.merchant.enums.MerchantStatus;
 import com.ffms.resqeats.security.context.SecurityContextHolder;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -21,7 +22,7 @@ import java.util.UUID;
  * but merchant owners (users with ownerUserId) can manage their own merchant.
  */
 @Repository
-public interface MerchantRepository extends BaseScopedRepository<Merchant> {
+public interface MerchantRepository extends BaseScopedRepository<Merchant>, JpaSpecificationExecutor<Merchant> {
 
     Optional<Merchant> findByOwnerUserId(UUID ownerUserId);
 

@@ -8,6 +8,9 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
+import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.FilterDef;
+import org.hibernate.annotations.ParamDef;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -16,9 +19,15 @@ import java.util.UUID;
  * Merchant entity per SRS Section 7.2.
  * Represents a business partner who owns and operates one or more outlets.
  * Hierarchy: Merchant → Outlet → Item
+ * 
+ * HIBERNATE FILTERS (applied at repository level via TenantFilterAspect):
+ * - merchantOwnerFilter: MERCHANT role sees only their own merchant (by owner_user_id)
+ * - merchantIdFilter: Filter by specific merchant_id
  */
 @Entity
 @Table(name = "merchants")
+@FilterDef(name = "merchantOwnerFilter", parameters = @ParamDef(name = "ownerUserId", type = String.class))
+@Filter(name = "merchantOwnerFilter", condition = "owner_user_id = :ownerUserId")
 @Getter
 @Setter
 @NoArgsConstructor

@@ -4,9 +4,15 @@ import com.ffms.resqeats.common.dto.ApiResponse;
 import com.ffms.resqeats.common.dto.PageResponse;
 import com.ffms.resqeats.order.dto.CreateOrderRequest;
 import com.ffms.resqeats.order.dto.OrderDto;
+import com.ffms.resqeats.order.dto.OrderFilterDto;
+import com.ffms.resqeats.order.dto.OrderListResponseDto;
 import com.ffms.resqeats.order.entity.Order;
-import com.ffms.resqeats.order.enums.OrderStatus;
+import com.ffms.resqeats.order.entity.OrderItem;
+import com.ffms.resqeats.order.repository.OrderItemRepository;
 import com.ffms.resqeats.order.service.OrderService;
+import com.ffms.resqeats.outlet.repository.OutletRepository;
+import com.ffms.resqeats.merchant.repository.MerchantRepository;
+import com.ffms.resqeats.user.repository.UserRepository;
 import com.ffms.resqeats.security.CurrentUser;
 import com.ffms.resqeats.security.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
@@ -27,21 +33,22 @@ import java.util.UUID;
 
 /**
  * Order controller per SRS Section 6.2.
+ * 
+ * All endpoints use unified paths - scope filtering is applied automatically
+ * at the repository level based on the authenticated user's role and context.
  *
- * Customer Endpoints:
+ * Endpoints:
  * POST /orders - Create order (checkout)
- * GET /orders - List customer orders
+ * POST /orders/{orderId}/submit - Submit order with payment
+ * GET /orders - List orders (filtered by user's scope)
  * GET /orders/{orderId} - Get order details
- * POST /orders/{orderId}/cancel - Cancel order
- *
- * Outlet Endpoints:
- * GET /outlet/orders - List outlet orders
- * POST /outlet/orders/{orderId}/accept - Accept order
- * POST /outlet/orders/{orderId}/decline - Decline order
- * POST /outlet/orders/{orderId}/preparing - Start preparing
- * POST /outlet/orders/{orderId}/ready - Mark ready
- * POST /outlet/orders/{orderId}/verify - Verify pickup code
- * POST /outlet/orders/{orderId}/complete - Complete order
+ * POST /orders/{orderId}/cancel - Cancel order (customer)
+ * POST /orders/{orderId}/accept - Accept order (merchant/outlet)
+ * POST /orders/{orderId}/decline - Decline order (merchant/outlet)
+ * POST /orders/{orderId}/preparing - Start preparing (merchant/outlet)
+ * POST /orders/{orderId}/ready - Mark ready (merchant/outlet)
+ * POST /orders/{orderId}/verify - Verify pickup code (merchant/outlet)
+ * POST /orders/{orderId}/complete - Complete order (merchant/outlet)
  */
 @RestController
 @RequestMapping("/api/v1")
@@ -51,6 +58,10 @@ import java.util.UUID;
 public class OrderController {
 
     private final OrderService orderService;
+    private final UserRepository userRepository;
+    private final OutletRepository outletRepository;
+    private final MerchantRepository merchantRepository;
+    private final OrderItemRepository orderItemRepository;
 
     // =====================
     // Customer Endpoints
@@ -92,34 +103,32 @@ public class OrderController {
     }
 
     @GetMapping("/orders")
-    @Operation(summary = "List customer orders")
-    @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<ApiResponse<PageResponse<OrderDto>>> getMyOrders(
-            @CurrentUser UserPrincipal currentUser,
+    @Operation(summary = "List orders with filters")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<PageResponse<OrderListResponseDto>>> getOrders(
+            OrderFilterDto filter,
             Pageable pageable) {
-        log.info("List orders request for userId: {}, page: {}", currentUser.getId(), pageable.getPageNumber());
+        log.info("List orders request - filter: {}, page: {}", filter, pageable.getPageNumber());
         try {
-            Page<Order> orders = orderService.getUserOrders(currentUser.getId(), pageable);
-            PageResponse<OrderDto> response = PageResponse.from(orders.map(this::toDto));
-            log.info("Retrieved {} orders for userId: {}", orders.getTotalElements(), currentUser.getId());
+            Page<Order> orders = orderService.getAllOrders(filter, pageable);
+            PageResponse<OrderListResponseDto> response = PageResponse.from(orders.map(this::toListDto));
+            log.info("Retrieved {} orders", orders.getTotalElements());
             return ResponseEntity.ok(ApiResponse.success(response));
         } catch (Exception e) {
-            log.error("Failed to list orders for userId: {} - Error: {}", currentUser.getId(), e.getMessage());
+            log.error("Failed to list orders - Error: {}", e.getMessage());
             throw e;
         }
     }
 
     @GetMapping("/orders/{orderId}")
     @Operation(summary = "Get order details")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<OrderDto>> getOrder(
-            @CurrentUser UserPrincipal currentUser,
             @PathVariable UUID orderId) {
-        log.info("Get order details request for orderId: {} by userId: {}", orderId, currentUser.getId());
+        log.info("Get order details request for orderId: {}", orderId);
         try {
-            // CRITICAL-002 FIX: Authorization check BEFORE data retrieval
-            // Use scoped method that validates ownership first
-            Order order = orderService.getOrderByIdForUser(orderId, currentUser.getId());
+            // Scope validation is handled at repository level via Hibernate filters
+            Order order = orderService.getOrderById(orderId);
             log.info("Order details retrieved successfully: {}", orderId);
             return ResponseEntity.ok(ApiResponse.success(toDto(order)));
         } catch (Exception e) {
@@ -149,154 +158,110 @@ public class OrderController {
     }
 
     // =====================
-    // Outlet Endpoints
+    // Order Action Endpoints
     // =====================
 
-    @GetMapping("/outlet/orders")
-    @Operation(summary = "List outlet orders")
-    @PreAuthorize("hasAnyRole('MERCHANT', 'OUTLET_USER')")
-    public ResponseEntity<ApiResponse<PageResponse<OrderDto>>> getOutletOrders(
-            @CurrentUser UserPrincipal currentUser,
-            @RequestParam(required = false) OrderStatus status,
-            Pageable pageable) {
-        UUID outletId = currentUser.getOutletId();
-        log.info("Outlet: List orders request for outletId: {} - status: {}, page: {}", outletId, status, pageable.getPageNumber());
-        try {
-            Page<Order> orders;
-            if (status != null) {
-                orders = orderService.getOutletOrdersByStatus(outletId, status, pageable);
-            } else {
-                orders = orderService.getOutletOrders(outletId, pageable);
-            }
-            PageResponse<OrderDto> response = PageResponse.from(orders.map(this::toDto));
-            log.info("Outlet: Retrieved {} orders for outletId: {}", orders.getTotalElements(), outletId);
-            return ResponseEntity.ok(ApiResponse.success(response));
-        } catch (Exception e) {
-            log.error("Outlet: Failed to list orders for outletId: {} - Error: {}", outletId, e.getMessage());
-            throw e;
-        }
-    }
-
-    @GetMapping("/outlet/orders/pending")
-    @Operation(summary = "Get pending orders for outlet")
-    @PreAuthorize("hasAnyRole('MERCHANT', 'OUTLET_USER')")
-    public ResponseEntity<ApiResponse<PageResponse<OrderDto>>> getPendingOrders(
-            @CurrentUser UserPrincipal currentUser,
-            Pageable pageable) {
-        UUID outletId = currentUser.getOutletId();
-        log.info("Outlet: Get pending orders request for outletId: {}", outletId);
-        try {
-            Page<Order> orders = orderService.getOutletOrdersByStatus(outletId, OrderStatus.PENDING_OUTLET_ACCEPTANCE, pageable);
-            PageResponse<OrderDto> response = PageResponse.from(orders.map(this::toDto));
-            log.info("Outlet: Retrieved {} pending orders for outletId: {}", orders.getTotalElements(), outletId);
-            return ResponseEntity.ok(ApiResponse.success(response));
-        } catch (Exception e) {
-            log.error("Outlet: Failed to get pending orders for outletId: {} - Error: {}", outletId, e.getMessage());
-            throw e;
-        }
-    }
-
-    @PostMapping("/outlet/orders/{orderId}/accept")
+    @PostMapping("/orders/{orderId}/accept")
     @Operation(summary = "Accept order")
     @PreAuthorize("hasAnyRole('MERCHANT', 'OUTLET_USER')")
     public ResponseEntity<ApiResponse<OrderDto>> acceptOrder(
             @CurrentUser UserPrincipal currentUser,
             @PathVariable UUID orderId,
             @RequestBody(required = false) AcceptOrderRequest request) {
-        log.info("Outlet: Accept order request for orderId: {} by userId: {}", orderId, currentUser.getId());
+        log.info("Accept order request for orderId: {} by userId: {}", orderId, currentUser.getId());
         try {
             Order order = orderService.acceptOrder(orderId, currentUser.getId());
-            log.info("Outlet: Order accepted successfully: {}", order.getOrderNumber());
+            log.info("Order accepted successfully: {}", order.getOrderNumber());
             return ResponseEntity.ok(ApiResponse.success(toDto(order), "Order accepted"));
         } catch (Exception e) {
-            log.error("Outlet: Failed to accept order: {} - Error: {}", orderId, e.getMessage());
+            log.error("Failed to accept order: {} - Error: {}", orderId, e.getMessage());
             throw e;
         }
     }
 
-    @PostMapping("/outlet/orders/{orderId}/decline")
+    @PostMapping("/orders/{orderId}/decline")
     @Operation(summary = "Decline order")
     @PreAuthorize("hasAnyRole('MERCHANT', 'OUTLET_USER')")
     public ResponseEntity<ApiResponse<OrderDto>> declineOrder(
             @CurrentUser UserPrincipal currentUser,
             @PathVariable UUID orderId,
             @Valid @RequestBody DeclineOrderRequest request) {
-        log.info("Outlet: Decline order request for orderId: {} - Reason: {}", orderId, request.getReason());
+        log.info("Decline order request for orderId: {} - Reason: {}", orderId, request.getReason());
         try {
             Order order = orderService.declineOrder(orderId, request.getReason(), currentUser.getId());
-            log.info("Outlet: Order declined: {}", order.getOrderNumber());
+            log.info("Order declined: {}", order.getOrderNumber());
             return ResponseEntity.ok(ApiResponse.success(toDto(order), "Order declined"));
         } catch (Exception e) {
-            log.error("Outlet: Failed to decline order: {} - Error: {}", orderId, e.getMessage());
+            log.error("Failed to decline order: {} - Error: {}", orderId, e.getMessage());
             throw e;
         }
     }
 
-    @PostMapping("/outlet/orders/{orderId}/preparing")
+    @PostMapping("/orders/{orderId}/preparing")
     @Operation(summary = "Start preparing order")
     @PreAuthorize("hasAnyRole('MERCHANT', 'OUTLET_USER')")
     public ResponseEntity<ApiResponse<OrderDto>> startPreparing(
             @CurrentUser UserPrincipal currentUser,
             @PathVariable UUID orderId) {
-        log.info("Outlet: Start preparing request for orderId: {} by userId: {}", orderId, currentUser.getId());
+        log.info("Start preparing request for orderId: {} by userId: {}", orderId, currentUser.getId());
         try {
             Order order = orderService.startPreparing(orderId, currentUser.getId());
-            log.info("Outlet: Order preparation started: {}", order.getOrderNumber());
+            log.info("Order preparation started: {}", order.getOrderNumber());
             return ResponseEntity.ok(ApiResponse.success(toDto(order), "Order preparation started"));
         } catch (Exception e) {
-            log.error("Outlet: Failed to start preparing order: {} - Error: {}", orderId, e.getMessage());
+            log.error("Failed to start preparing order: {} - Error: {}", orderId, e.getMessage());
             throw e;
         }
     }
 
-    @PostMapping("/outlet/orders/{orderId}/ready")
+    @PostMapping("/orders/{orderId}/ready")
     @Operation(summary = "Mark order ready for pickup")
     @PreAuthorize("hasAnyRole('MERCHANT', 'OUTLET_USER')")
     public ResponseEntity<ApiResponse<OrderDto>> markReady(
             @CurrentUser UserPrincipal currentUser,
             @PathVariable UUID orderId) {
-        log.info("Outlet: Mark ready request for orderId: {} by userId: {}", orderId, currentUser.getId());
+        log.info("Mark ready request for orderId: {} by userId: {}", orderId, currentUser.getId());
         try {
             Order order = orderService.markReady(orderId, currentUser.getId());
-            log.info("Outlet: Order marked ready: {}", order.getOrderNumber());
+            log.info("Order marked ready: {}", order.getOrderNumber());
             return ResponseEntity.ok(ApiResponse.success(toDto(order), "Order marked as ready"));
         } catch (Exception e) {
-            log.error("Outlet: Failed to mark order ready: {} - Error: {}", orderId, e.getMessage());
+            log.error("Failed to mark order ready: {} - Error: {}", orderId, e.getMessage());
             throw e;
         }
     }
 
-    @PostMapping("/outlet/orders/{orderId}/verify")
+    @PostMapping("/orders/{orderId}/verify")
     @Operation(summary = "Verify pickup code")
     @PreAuthorize("hasAnyRole('MERCHANT', 'OUTLET_USER')")
     public ResponseEntity<ApiResponse<OrderDto>> verifyPickupCode(
             @CurrentUser UserPrincipal currentUser,
             @PathVariable UUID orderId,
             @Valid @RequestBody VerifyPickupRequest request) {
-        log.info("Outlet: Verify pickup request for orderId: {}", orderId);
+        log.info("Verify pickup request for orderId: {}", orderId);
         try {
             Order order = orderService.verifyPickup(orderId, request.getPickupCode(), currentUser.getId());
-            log.info("Outlet: Pickup verified for order: {}", order.getOrderNumber());
+            log.info("Pickup verified for order: {}", order.getOrderNumber());
             return ResponseEntity.ok(ApiResponse.success(toDto(order), "Pickup verified"));
         } catch (Exception e) {
-            log.warn("Outlet: Pickup verification failed for order: {} - Error: {}", orderId, e.getMessage());
+            log.warn("Pickup verification failed for order: {} - Error: {}", orderId, e.getMessage());
             throw e;
         }
     }
 
-    @PostMapping("/outlet/orders/{orderId}/complete")
+    @PostMapping("/orders/{orderId}/complete")
     @Operation(summary = "Complete order")
     @PreAuthorize("hasAnyRole('MERCHANT', 'OUTLET_USER')")
     public ResponseEntity<ApiResponse<OrderDto>> completeOrder(
             @CurrentUser UserPrincipal currentUser,
             @PathVariable UUID orderId) {
-        log.info("Outlet: Complete order request for orderId: {} by userId: {}", orderId, currentUser.getId());
+        log.info("Complete order request for orderId: {} by userId: {}", orderId, currentUser.getId());
         try {
             Order order = orderService.completeOrder(orderId);
-            log.info("Outlet: Order completed: {}", order.getOrderNumber());
+            log.info("Order completed: {}", order.getOrderNumber());
             return ResponseEntity.ok(ApiResponse.success(toDto(order), "Order completed"));
         } catch (Exception e) {
-            log.error("Outlet: Failed to complete order: {} - Error: {}", orderId, e.getMessage());
+            log.error("Failed to complete order: {} - Error: {}", orderId, e.getMessage());
             throw e;
         }
     }
@@ -358,5 +323,56 @@ public class OrderController {
                 .readyAt(order.getReadyAt())
                 .completedAt(order.getCompletedAt())
                 .build();
+    }
+
+    // List response DTO mapping method
+    private OrderListResponseDto toListDto(Order order) {
+        OrderListResponseDto.OrderListResponseDtoBuilder builder = OrderListResponseDto.builder()
+                .id(order.getId())
+                .orderNumber(order.getOrderNumber())
+                .userId(order.getUserId())
+                .outletId(order.getOutletId())
+                .status(order.getStatus())
+                .subtotal(order.getSubtotal())
+                .tax(order.getTax())
+                .total(order.getTotal())
+                .pickupCode(order.getPickupCode())
+                .pickupBy(order.getPickupBy())
+                .createdAt(order.getCreatedAt())
+                .acceptedAt(order.getAcceptedAt())
+                .readyAt(order.getReadyAt())
+                .pickedUpAt(order.getPickedUpAt())
+                .completedAt(order.getCompletedAt())
+                .rating(order.getRating());
+
+        // Add user association data
+        if (order.getUserId() != null) {
+            userRepository.findById(order.getUserId()).ifPresent(user -> {
+                builder.userName(user.getFirstName() + " " + user.getLastName())
+                       .userEmail(user.getEmail())
+                       .userPhone(user.getPhone());
+            });
+        }
+
+        // Add outlet and merchant association data
+        if (order.getOutletId() != null) {
+            outletRepository.findById(order.getOutletId()).ifPresent(outlet -> {
+                builder.outletName(outlet.getName())
+                       .outletAddress(outlet.getAddress());
+                
+                if (outlet.getMerchantId() != null) {
+                    merchantRepository.findById(outlet.getMerchantId()).ifPresent(merchant -> {
+                        builder.merchantId(merchant.getId())
+                               .merchantName(merchant.getName());
+                    });
+                }
+            });
+        }
+
+        // Add items count
+        java.util.List<OrderItem> items = orderItemRepository.findByOrderId(order.getId());
+        builder.itemsCount(items.size());
+
+        return builder.build();
     }
 }

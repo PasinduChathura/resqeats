@@ -7,6 +7,7 @@ import com.ffms.resqeats.user.enums.UserStatus;
 import com.ffms.resqeats.security.context.SecurityContextHolder;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -25,7 +26,7 @@ import java.util.UUID;
  * - USER: Access to their own user record
  */
 @Repository
-public interface UserRepository extends BaseScopedRepository<User> {
+public interface UserRepository extends BaseScopedRepository<User>, JpaSpecificationExecutor<User> {
 
     @Override
     default void validateScope(User entity) {

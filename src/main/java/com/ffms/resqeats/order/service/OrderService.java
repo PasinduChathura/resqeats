@@ -9,6 +9,7 @@ import com.ffms.resqeats.order.entity.OrderItem;
 import com.ffms.resqeats.order.enums.OrderStatus;
 import com.ffms.resqeats.order.repository.OrderItemRepository;
 import com.ffms.resqeats.order.repository.OrderRepository;
+import com.ffms.resqeats.order.specification.OrderSpecification;
 import com.ffms.resqeats.outlet.entity.Outlet;
 import com.ffms.resqeats.outlet.repository.OutletRepository;
 import com.ffms.resqeats.payment.service.PaymentService;
@@ -490,6 +491,21 @@ public class OrderService {
                     log.warn("Order not found - orderNumber: {}", orderNumber);
                     return new BusinessException("ORDER_003", "Order not found");
                 });
+    }
+
+    /**
+     * Retrieves all orders with comprehensive filtering.
+     *
+     * @param filter the filter criteria
+     * @param pageable the pagination parameters
+     * @return a page of filtered orders
+     */
+    public Page<Order> getAllOrders(OrderFilterDto filter, Pageable pageable) {
+        log.info("Retrieving all orders with filter: {}, page: {}, size: {}", 
+                filter, pageable.getPageNumber(), pageable.getPageSize());
+        Page<Order> orders = orderRepository.findAll(OrderSpecification.filterBy(filter), pageable);
+        log.info("Retrieved {} orders", orders.getTotalElements());
+        return orders;
     }
 
     /**

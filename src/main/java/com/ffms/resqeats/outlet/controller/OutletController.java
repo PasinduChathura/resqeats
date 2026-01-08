@@ -5,6 +5,8 @@ import com.ffms.resqeats.common.dto.PageResponse;
 import com.ffms.resqeats.geo.service.GeoService;
 import com.ffms.resqeats.outlet.dto.CreateOutletRequest;
 import com.ffms.resqeats.outlet.dto.OutletDto;
+import com.ffms.resqeats.outlet.dto.OutletFilterDto;
+import com.ffms.resqeats.outlet.dto.OutletListResponseDto;
 import com.ffms.resqeats.outlet.dto.UpdateOutletRequest;
 import com.ffms.resqeats.outlet.service.OutletService;
 import com.ffms.resqeats.security.CurrentUser;
@@ -25,21 +27,24 @@ import java.util.UUID;
 
 /**
  * Outlet controller per SRS Section 6.2.
+ * 
+ * All endpoints use unified paths - scope filtering is applied automatically
+ * at the repository level based on the authenticated user's role and context.
  *
  * Public Endpoints:
  * GET /outlets/nearby - Find nearby outlets
  * GET /outlets/{id} - Get outlet details
  * GET /outlets - Search/browse outlets
  *
- * Merchant Endpoints:
- * POST /merchants/{merchantId}/outlets - Create outlet
- * GET /merchants/{merchantId}/outlets - List merchant outlets
+ * Merchant/Outlet Endpoints:
+ * POST /merchants/{merchantId}/outlets - Create outlet (MERCHANT)
+ * GET /merchants/{merchantId}/outlets - List merchant outlets (MERCHANT)
  * PUT /outlets/{id} - Update outlet
  * POST /outlets/{id}/hours - Set operating hours
- * POST /outlets/{id}/activate - Activate outlet
- * POST /outlets/{id}/deactivate - Deactivate outlet
- * POST /outlets/{id}/open - Open outlet
- * POST /outlets/{id}/close - Close outlet
+ * POST /outlets/{id}/activate - Activate outlet (MERCHANT)
+ * POST /outlets/{id}/deactivate - Deactivate outlet (MERCHANT)
+ * POST /outlets/{id}/open - Open outlet (accept orders)
+ * POST /outlets/{id}/close - Close outlet (stop orders)
  */
 @RestController
 @RequestMapping("/api/v1")
@@ -86,19 +91,18 @@ public class OutletController {
     }
 
     @GetMapping("/outlets")
-    @Operation(summary = "Search/browse outlets")
-    public ResponseEntity<ApiResponse<PageResponse<OutletDto>>> searchOutlets(
-            @RequestParam(required = false) String query,
+    @Operation(summary = "List outlets with filters")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<PageResponse<OutletListResponseDto>>> getOutlets(
+            OutletFilterDto filter,
             Pageable pageable) {
-        log.info("Search outlets request - query: {}, page: {}", query, pageable.getPageNumber());
+        log.info("List outlets request - filter: {}, page: {}", filter, pageable.getPageNumber());
         try {
-            Page<OutletDto> outlets = query != null
-                    ? outletService.searchOutlets(query, pageable)
-                    : outletService.getActiveOutlets(pageable);
-            log.info("Found {} outlets", outlets.getTotalElements());
+            Page<OutletListResponseDto> outlets = outletService.getAllOutlets(filter, pageable);
+            log.info("Retrieved {} outlets", outlets.getTotalElements());
             return ResponseEntity.ok(ApiResponse.success(PageResponse.from(outlets)));
         } catch (Exception e) {
-            log.error("Failed to search outlets - Error: {}", e.getMessage());
+            log.error("Failed to list outlets - Error: {}", e.getMessage());
             throw e;
         }
     }

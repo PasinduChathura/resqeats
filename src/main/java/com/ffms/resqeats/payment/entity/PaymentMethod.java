@@ -5,6 +5,9 @@ import com.ffms.resqeats.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
+import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.FilterDef;
+import org.hibernate.annotations.ParamDef;
 
 import java.util.UUID;
 
@@ -16,6 +19,8 @@ import java.util.UUID;
 @Table(name = "payment_methods", indexes = {
         @Index(name = "idx_payment_method_user", columnList = "user_id")
 })
+@FilterDef(name = "paymentMethodUserFilter", parameters = @ParamDef(name = "userId", type = String.class))
+@Filter(name = "paymentMethodUserFilter", condition = "user_id = :userId")
 @Getter
 @Setter
 @NoArgsConstructor
