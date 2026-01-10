@@ -9,7 +9,6 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * Payment repository per SRS Section 6.10.
@@ -22,7 +21,7 @@ public interface PaymentRepository extends com.ffms.resqeats.common.repository.B
      * Access checks must be implemented in service layer using OrderRepository.
      */
 
-    Optional<Payment> findByOrderId(UUID orderId);
+    Optional<Payment> findByOrderId(Long orderId);
 
     Optional<Payment> findByIpgTransactionId(String ipgTransactionId);
 
@@ -31,7 +30,7 @@ public interface PaymentRepository extends com.ffms.resqeats.common.repository.B
     @Query("SELECT p FROM Payment p WHERE p.status = 'AUTHORIZED' AND p.authorizedAt < :cutoff")
     java.util.List<Payment> findStaleAuthorizations(@Param("cutoff") java.time.LocalDateTime cutoff);
 
-    boolean existsByOrderId(UUID orderId);
+    boolean existsByOrderId(Long orderId);
 
     /**
      * MEDIUM FIX (Issue #12): Find payment by idempotency key for idempotent operations.

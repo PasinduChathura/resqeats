@@ -21,9 +21,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
-import java.util.UUID;
 
 /**
  * Outlet controller per SRS Section 6.2.
@@ -78,7 +76,7 @@ public class OutletController {
 
     @GetMapping("/outlets/{id}")
     @Operation(summary = "Get outlet details")
-    public ResponseEntity<ApiResponse<OutletDto>> getOutlet(@PathVariable UUID id) {
+    public ResponseEntity<ApiResponse<OutletDto>> getOutlet(@PathVariable Long id) {
         log.info("Get outlet details request for outletId: {}", id);
         try {
             OutletDto outlet = outletService.getOutlet(id);
@@ -113,10 +111,10 @@ public class OutletController {
 
     @PostMapping("/merchants/{merchantId}/outlets")
     @Operation(summary = "Create outlet")
-    @PreAuthorize("hasRole('MERCHANT')")
+    @PreAuthorize("hasRole('MERCHANT_USER')")
     public ResponseEntity<ApiResponse<OutletDto>> createOutlet(
             @CurrentUser UserPrincipal currentUser,
-            @PathVariable UUID merchantId,
+            @PathVariable Long merchantId,
             @Valid @RequestBody CreateOutletRequest request) {
         log.info("Create outlet request for merchantId: {} - Name: {}", merchantId, request.getName());
         try {
@@ -131,9 +129,9 @@ public class OutletController {
 
     @GetMapping("/merchants/{merchantId}/outlets")
     @Operation(summary = "List merchant outlets")
-    @PreAuthorize("hasRole('MERCHANT')")
+    @PreAuthorize("hasRole('MERCHANT_USER')")
     public ResponseEntity<ApiResponse<List<OutletDto>>> getMerchantOutlets(
-            @PathVariable UUID merchantId) {
+            @PathVariable Long merchantId) {
         log.info("List outlets request for merchantId: {}", merchantId);
         try {
             List<OutletDto> outlets = outletService.getOutletsByMerchant(merchantId);
@@ -147,10 +145,10 @@ public class OutletController {
 
     @PutMapping("/outlets/{id}")
     @Operation(summary = "Update outlet")
-    @PreAuthorize("hasAnyRole('MERCHANT', 'OUTLET_USER')")
+    @PreAuthorize("hasAnyRole('MERCHANT_USER', 'OUTLET_USER')")
     public ResponseEntity<ApiResponse<OutletDto>> updateOutlet(
             @CurrentUser UserPrincipal currentUser,
-            @PathVariable UUID id,
+            @PathVariable Long id,
             @Valid @RequestBody UpdateOutletRequest request) {
         log.info("Update outlet request for outletId: {} by userId: {}", id, currentUser.getId());
         try {
@@ -165,10 +163,10 @@ public class OutletController {
 
     @PostMapping("/outlets/{id}/hours")
     @Operation(summary = "Set operating hours")
-    @PreAuthorize("hasAnyRole('MERCHANT', 'OUTLET_USER')")
+    @PreAuthorize("hasAnyRole('MERCHANT_USER', 'OUTLET_USER')")
     public ResponseEntity<ApiResponse<OutletDto>> setOperatingHours(
             @CurrentUser UserPrincipal currentUser,
-            @PathVariable UUID id,
+            @PathVariable Long id,
             @Valid @RequestBody List<CreateOutletRequest.OperatingHoursRequest> hours) {
         log.info("Set operating hours request for outletId: {}", id);
         try {
@@ -183,10 +181,10 @@ public class OutletController {
 
     @PostMapping("/outlets/{id}/activate")
     @Operation(summary = "Activate outlet")
-    @PreAuthorize("hasRole('MERCHANT')")
+    @PreAuthorize("hasRole('MERCHANT_USER')")
     public ResponseEntity<ApiResponse<OutletDto>> activateOutlet(
             @CurrentUser UserPrincipal currentUser,
-            @PathVariable UUID id) {
+            @PathVariable Long id) {
         log.info("Activate outlet request for outletId: {} by userId: {}", id, currentUser.getId());
         try {
             OutletDto outlet = outletService.activateOutlet(id, currentUser.getId());
@@ -200,10 +198,10 @@ public class OutletController {
 
     @PostMapping("/outlets/{id}/deactivate")
     @Operation(summary = "Deactivate outlet")
-    @PreAuthorize("hasRole('MERCHANT')")
+    @PreAuthorize("hasRole('MERCHANT_USER')")
     public ResponseEntity<ApiResponse<OutletDto>> deactivateOutlet(
             @CurrentUser UserPrincipal currentUser,
-            @PathVariable UUID id) {
+            @PathVariable Long id) {
         log.info("Deactivate outlet request for outletId: {} by userId: {}", id, currentUser.getId());
         try {
             OutletDto outlet = outletService.deactivateOutlet(id, currentUser.getId());
@@ -217,10 +215,10 @@ public class OutletController {
 
     @PostMapping("/outlets/{id}/open")
     @Operation(summary = "Open outlet (start accepting orders)")
-    @PreAuthorize("hasAnyRole('MERCHANT', 'OUTLET_USER')")
+    @PreAuthorize("hasAnyRole('MERCHANT_USER', 'OUTLET_USER')")
     public ResponseEntity<ApiResponse<OutletDto>> openOutlet(
             @CurrentUser UserPrincipal currentUser,
-            @PathVariable UUID id) {
+            @PathVariable Long id) {
         log.info("Open outlet request for outletId: {} by userId: {}", id, currentUser.getId());
         try {
             OutletDto outlet = outletService.reopenOutlet(id, currentUser.getId());
@@ -234,10 +232,10 @@ public class OutletController {
 
     @PostMapping("/outlets/{id}/close")
     @Operation(summary = "Close outlet (stop accepting orders)")
-    @PreAuthorize("hasAnyRole('MERCHANT', 'OUTLET_USER')")
+    @PreAuthorize("hasAnyRole('MERCHANT_USER', 'OUTLET_USER')")
     public ResponseEntity<ApiResponse<OutletDto>> closeOutlet(
             @CurrentUser UserPrincipal currentUser,
-            @PathVariable UUID id) {
+            @PathVariable Long id) {
         log.info("Close outlet request for outletId: {} by userId: {}", id, currentUser.getId());
         try {
             OutletDto outlet = outletService.temporarilyCloseOutlet(id, currentUser.getId());

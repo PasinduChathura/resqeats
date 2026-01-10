@@ -24,8 +24,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.UUID;
-
 /**
  * Order controller per SRS Section 6.2.
  * 
@@ -60,7 +58,7 @@ public class OrderController {
 
     @PostMapping("/orders")
     @Operation(summary = "Create order (checkout)")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('CUSTOMER_USER')")
     public ResponseEntity<ApiResponse<OrderDto>> createOrder(
             @CurrentUser UserPrincipal currentUser,
             @Valid @RequestBody CreateOrderRequest request) {
@@ -77,10 +75,10 @@ public class OrderController {
 
     @PostMapping("/orders/{orderId}/submit")
     @Operation(summary = "Submit order with payment")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('CUSTOMER_USER')")
     public ResponseEntity<ApiResponse<OrderDto>> submitOrder(
             @CurrentUser UserPrincipal currentUser,
-            @PathVariable UUID orderId,
+            @PathVariable Long orderId,
             @Valid @RequestBody SubmitOrderRequest request) {
         log.info("Submit order request for orderId: {} by userId: {}", orderId, currentUser.getId());
         try {
@@ -115,7 +113,7 @@ public class OrderController {
     @Operation(summary = "Get order details")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<OrderDto>> getOrder(
-            @PathVariable UUID orderId) {
+            @PathVariable Long orderId) {
         log.info("Get order details request for orderId: {}", orderId);
         try {
             // Scope validation is handled at repository level via Hibernate filters
@@ -130,10 +128,10 @@ public class OrderController {
 
     @PostMapping("/orders/{orderId}/cancel")
     @Operation(summary = "Cancel order")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('CUSTOMER_USER')")
     public ResponseEntity<ApiResponse<OrderDto>> cancelOrder(
             @CurrentUser UserPrincipal currentUser,
-            @PathVariable UUID orderId,
+            @PathVariable Long orderId,
             @RequestBody(required = false) CancelOrderRequest request) {
         String reason = request != null ? request.getReason() : "Customer requested cancellation";
         log.info("Cancel order request for orderId: {} by userId: {} - Reason: {}", orderId, currentUser.getId(), reason);
@@ -154,10 +152,10 @@ public class OrderController {
 
     @PostMapping("/orders/{orderId}/accept")
     @Operation(summary = "Accept order")
-    @PreAuthorize("hasAnyRole('MERCHANT', 'OUTLET_USER')")
+    @PreAuthorize("hasAnyRole('MERCHANT_USER', 'OUTLET_USER')")
     public ResponseEntity<ApiResponse<OrderDto>> acceptOrder(
             @CurrentUser UserPrincipal currentUser,
-            @PathVariable UUID orderId,
+            @PathVariable Long orderId,
             @RequestBody(required = false) AcceptOrderRequest request) {
         log.info("Accept order request for orderId: {} by userId: {}", orderId, currentUser.getId());
         try {
@@ -172,10 +170,10 @@ public class OrderController {
 
     @PostMapping("/orders/{orderId}/decline")
     @Operation(summary = "Decline order")
-    @PreAuthorize("hasAnyRole('MERCHANT', 'OUTLET_USER')")
+    @PreAuthorize("hasAnyRole('MERCHANT_USER', 'OUTLET_USER')")
     public ResponseEntity<ApiResponse<OrderDto>> declineOrder(
             @CurrentUser UserPrincipal currentUser,
-            @PathVariable UUID orderId,
+            @PathVariable Long orderId,
             @Valid @RequestBody DeclineOrderRequest request) {
         log.info("Decline order request for orderId: {} - Reason: {}", orderId, request.getReason());
         try {
@@ -190,10 +188,10 @@ public class OrderController {
 
     @PostMapping("/orders/{orderId}/preparing")
     @Operation(summary = "Start preparing order")
-    @PreAuthorize("hasAnyRole('MERCHANT', 'OUTLET_USER')")
+    @PreAuthorize("hasAnyRole('MERCHANT_USER', 'OUTLET_USER')")
     public ResponseEntity<ApiResponse<OrderDto>> startPreparing(
             @CurrentUser UserPrincipal currentUser,
-            @PathVariable UUID orderId) {
+            @PathVariable Long orderId) {
         log.info("Start preparing request for orderId: {} by userId: {}", orderId, currentUser.getId());
         try {
             Order order = orderService.startPreparing(orderId, currentUser.getId());
@@ -207,10 +205,10 @@ public class OrderController {
 
     @PostMapping("/orders/{orderId}/ready")
     @Operation(summary = "Mark order ready for pickup")
-    @PreAuthorize("hasAnyRole('MERCHANT', 'OUTLET_USER')")
+    @PreAuthorize("hasAnyRole('MERCHANT_USER', 'OUTLET_USER')")
     public ResponseEntity<ApiResponse<OrderDto>> markReady(
             @CurrentUser UserPrincipal currentUser,
-            @PathVariable UUID orderId) {
+            @PathVariable Long orderId) {
         log.info("Mark ready request for orderId: {} by userId: {}", orderId, currentUser.getId());
         try {
             Order order = orderService.markReady(orderId, currentUser.getId());
@@ -224,10 +222,10 @@ public class OrderController {
 
     @PostMapping("/orders/{orderId}/verify")
     @Operation(summary = "Verify pickup code")
-    @PreAuthorize("hasAnyRole('MERCHANT', 'OUTLET_USER')")
+    @PreAuthorize("hasAnyRole('MERCHANT_USER', 'OUTLET_USER')")
     public ResponseEntity<ApiResponse<OrderDto>> verifyPickupCode(
             @CurrentUser UserPrincipal currentUser,
-            @PathVariable UUID orderId,
+            @PathVariable Long orderId,
             @Valid @RequestBody VerifyPickupRequest request) {
         log.info("Verify pickup request for orderId: {}", orderId);
         try {
@@ -242,10 +240,10 @@ public class OrderController {
 
     @PostMapping("/orders/{orderId}/complete")
     @Operation(summary = "Complete order")
-    @PreAuthorize("hasAnyRole('MERCHANT', 'OUTLET_USER')")
+    @PreAuthorize("hasAnyRole('MERCHANT_USER', 'OUTLET_USER')")
     public ResponseEntity<ApiResponse<OrderDto>> completeOrder(
             @CurrentUser UserPrincipal currentUser,
-            @PathVariable UUID orderId) {
+            @PathVariable Long orderId) {
         log.info("Complete order request for orderId: {} by userId: {}", orderId, currentUser.getId());
         try {
             Order order = orderService.completeOrder(orderId);
@@ -263,7 +261,7 @@ public class OrderController {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class SubmitOrderRequest {
-        private UUID paymentMethodId;
+        private Long paymentMethodId;
     }
 
     @Data

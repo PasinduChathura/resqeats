@@ -22,10 +22,10 @@ import java.util.UUID;
  * Centralized JWT utility for token generation and validation.
  * 
  * JWT Claims:
- * - sub: userId (UUID)
+ * - sub: userId (Long)
  * - role: UserRole enum name
- * - merchantId: UUID (nullable)
- * - outletId: UUID (nullable)
+ * - merchantId: Long (nullable)
+ * - outletId: Long (nullable)
  * - email: user email for audit
  * - jti: unique token ID for replay protection
  * - iat: issued at timestamp
@@ -100,15 +100,15 @@ public class JwtUtils {
                 .parseClaimsJws(token)
                 .getBody();
 
-        UUID userId = UUID.fromString(claims.getSubject());
+        Long userId = Long.valueOf(claims.getSubject());
         String roleStr = claims.get("role", String.class);
-        UserRole role = roleStr != null ? UserRole.valueOf(roleStr) : UserRole.USER;
+        UserRole role = roleStr != null ? UserRole.valueOf(roleStr) : UserRole.CUSTOMER_USER;
 
         String merchantIdStr = claims.get("merchantId", String.class);
-        UUID merchantId = merchantIdStr != null ? UUID.fromString(merchantIdStr) : null;
+        Long merchantId = merchantIdStr != null ? Long.valueOf(merchantIdStr) : null;
 
         String outletIdStr = claims.get("outletId", String.class);
-        UUID outletId = outletIdStr != null ? UUID.fromString(outletIdStr) : null;
+        Long outletId = outletIdStr != null ? Long.valueOf(outletIdStr) : null;
 
         String email = claims.get("email", String.class);
 

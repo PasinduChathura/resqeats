@@ -21,7 +21,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 /**
  * Service class for managing merchant operations per SRS Section 6.4.
@@ -62,7 +61,7 @@ public class MerchantService {
      * @throws BusinessException with code MERCH_002 if registration number already exists
      */
     @Transactional
-    public MerchantDto registerMerchant(CreateMerchantRequest request, UUID ownerId) {
+    public MerchantDto registerMerchant(CreateMerchantRequest request, Long ownerId) {
         log.info("Registering new merchant for owner: {}, name: {}", ownerId, request.getName());
 
         if (merchantRepository.existsByOwnerUserId(ownerId)) {
@@ -94,10 +93,10 @@ public class MerchantService {
         log.debug("Merchant entity saved with ID: {}", savedMerchant.getId());
 
         userRepository.findById(ownerId).ifPresent(user -> {
-            user.setRole(UserRole.MERCHANT);
+            user.setRole(UserRole.MERCHANT_USER);
             user.setMerchantId(savedMerchant.getId());
             userRepository.save(user);
-            log.debug("Updated user {} role to MERCHANT", ownerId);
+            log.debug("Updated user {} role to MERCHANT_USER", ownerId);
         });
 
         log.info("Merchant registered successfully - ID: {}, owner: {}, status: PENDING", 
@@ -119,7 +118,7 @@ public class MerchantService {
      * @throws BusinessException with code MERCH_004 if merchant not found
      */
     @Transactional
-    public MerchantDto approveMerchant(UUID merchantId, UUID adminId) {
+    public MerchantDto approveMerchant(Long merchantId, Long adminId) {
         log.info("Approving merchant: {} by admin: {}", merchantId, adminId);
         Merchant merchant = getMerchantOrThrow(merchantId);
 
@@ -153,7 +152,7 @@ public class MerchantService {
      * @throws BusinessException with code MERCH_004 if merchant not found
      */
     @Transactional
-    public MerchantDto rejectMerchant(UUID merchantId, UUID adminId, String reason) {
+    public MerchantDto rejectMerchant(Long merchantId, Long adminId, String reason) {
         log.info("Rejecting merchant: {} by admin: {}", merchantId, adminId);
         Merchant merchant = getMerchantOrThrow(merchantId);
 
@@ -188,7 +187,7 @@ public class MerchantService {
      * @throws BusinessException with code MERCH_004 if merchant not found
      */
     @Transactional
-    public MerchantDto suspendMerchant(UUID merchantId, UUID adminId, String reason) {
+    public MerchantDto suspendMerchant(Long merchantId, Long adminId, String reason) {
         log.info("Suspending merchant: {} by admin: {}", merchantId, adminId);
         Merchant merchant = getMerchantOrThrow(merchantId);
 
@@ -222,7 +221,7 @@ public class MerchantService {
      * @throws BusinessException with code MERCH_004 if merchant not found
      */
     @Transactional
-    public MerchantDto updateMerchant(UUID merchantId, UpdateMerchantRequest request, UUID userId) {
+    public MerchantDto updateMerchant(Long merchantId, UpdateMerchantRequest request, Long userId) {
         log.info("Updating merchant: {} by user: {}", merchantId, userId);
         Merchant merchant = getMerchantOrThrow(merchantId);
 
@@ -255,7 +254,7 @@ public class MerchantService {
      * @return the merchant as a DTO
      * @throws BusinessException with code MERCH_004 if merchant not found
      */
-    public MerchantDto getMerchant(UUID merchantId) {
+    public MerchantDto getMerchant(Long merchantId) {
         log.info("Retrieving merchant: {}", merchantId);
         MerchantDto merchantDto = toDto(getMerchantOrThrow(merchantId));
         log.debug("Merchant retrieved successfully - ID: {}", merchantId);
@@ -269,7 +268,7 @@ public class MerchantService {
      * @return the merchant as a DTO
      * @throws BusinessException with code MERCH_004 if merchant not found
      */
-    public MerchantDto getMerchantByOwner(UUID ownerId) {
+    public MerchantDto getMerchantByOwner(Long ownerId) {
         log.info("Retrieving merchant for owner: {}", ownerId);
         Merchant merchant = merchantRepository.findByOwnerUserId(ownerId)
                 .orElseThrow(() -> {
@@ -350,7 +349,7 @@ public class MerchantService {
      * @param merchantId the UUID of the merchant to check
      * @return true if the merchant exists and is approved, false otherwise
      */
-    public boolean isMerchantApproved(UUID merchantId) {
+    public boolean isMerchantApproved(Long merchantId) {
         log.debug("Checking if merchant is approved: {}", merchantId);
         boolean approved = merchantRepository.findById(merchantId)
                 .map(m -> m.getStatus() == MerchantStatus.APPROVED)
@@ -366,7 +365,7 @@ public class MerchantService {
      * @return the merchant entity
      * @throws BusinessException with code MERCH_004 if merchant not found
      */
-    private Merchant getMerchantOrThrow(UUID merchantId) {
+    private Merchant getMerchantOrThrow(Long merchantId) {
         log.debug("Looking up merchant: {}", merchantId);
         return merchantRepository.findById(merchantId)
                 .orElseThrow(() -> {

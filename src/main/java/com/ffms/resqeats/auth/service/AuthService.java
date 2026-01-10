@@ -122,7 +122,7 @@ public class AuthService {
                         passwordEncoder.encode(request.getPassword()) : null)
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
-                .role(UserRole.USER)
+            .role(UserRole.CUSTOMER_USER)
                 .status(UserStatus.ACTIVE)
                 .phoneVerified(false)
                 .emailVerified(false)
@@ -225,7 +225,7 @@ public class AuthService {
                             .email(isPhone ? null : destination)
                             .phoneVerified(isPhone)
                             .emailVerified(!isPhone)
-                            .role(UserRole.USER)
+                            .role(UserRole.CUSTOMER_USER)
                             .status(UserStatus.ACTIVE)
                             .build();
                     return userRepository.save(newUser);
@@ -303,7 +303,7 @@ public class AuthService {
      * @param userId the user ID to logout from all sessions
      */
     @Transactional
-    public void logoutAll(UUID userId) {
+    public void logoutAll(Long userId) {
         log.info("Processing logout-all request for user: {}", userId);
         refreshTokenRepository.revokeAllByUserId(userId, LocalDateTime.now());
         log.info("All sessions revoked successfully for user: {}", userId);
@@ -411,9 +411,9 @@ public class AuthService {
      * @param token the JWT token
      * @return the user ID from the token
      */
-    public UUID getUserIdFromToken(String token) {
+    public Long getUserIdFromToken(String token) {
         Claims claims = validateToken(token);
-        return UUID.fromString(claims.getSubject());
+        return Long.valueOf(claims.getSubject());
     }
 
     /**

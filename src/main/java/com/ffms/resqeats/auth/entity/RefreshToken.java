@@ -10,7 +10,6 @@ import org.hibernate.annotations.FilterDef;
 import org.hibernate.annotations.ParamDef;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 /**
  * Refresh token entity per SRS Section 4.1 (FR-M-004).
@@ -21,7 +20,7 @@ import java.util.UUID;
         @Index(name = "idx_refresh_token_user", columnList = "user_id"),
         @Index(name = "idx_refresh_token_token", columnList = "token")
 })
-@FilterDef(name = "refreshTokenUserFilter", parameters = @ParamDef(name = "userId", type = String.class))
+@FilterDef(name = "refreshTokenUserFilter", parameters = @ParamDef(name = "userId", type = Long.class))
 @Filter(name = "refreshTokenUserFilter", condition = "user_id = :userId")
 @Getter
 @Setter
@@ -33,7 +32,7 @@ public class RefreshToken extends BaseEntity {
     @NotNull
     @Column(name = "user_id", nullable = false)
     @JsonProperty("user_id")
-    private UUID userId;
+    private Long userId;
 
     @NotNull
     @Column(name = "token", length = 500, nullable = false, unique = true)

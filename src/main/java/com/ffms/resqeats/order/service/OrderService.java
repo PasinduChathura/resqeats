@@ -26,7 +26,6 @@ import org.springframework.validation.annotation.Validated;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * Service for managing order lifecycle with strict state machine transitions.
@@ -80,7 +79,7 @@ public class OrderService {
      * @throws BusinessException if outlet not found or not accepting orders
      */
     @Transactional
-    public Order createOrder(CreateOrderRequest request, UUID userId) {
+    public Order createOrder(CreateOrderRequest request, Long userId) {
         log.info("Creating order for userId: {}, outletId: {}", userId, request.getOutletId());
         
         Outlet outlet = outletRepository.findById(request.getOutletId())
@@ -144,7 +143,7 @@ public class OrderService {
      * @throws BusinessException if order not found or invalid state transition
      */
     @Transactional
-    public Order submitOrder(UUID orderId, UUID paymentMethodId) {
+    public Order submitOrder(Long orderId, Long paymentMethodId) {
         log.info("Submitting order for acceptance - orderId: {}, paymentMethodId: {}", orderId, paymentMethodId);
         Order order = getOrderById(orderId);
         validateTransition(order, OrderStatus.PENDING_OUTLET_ACCEPTANCE);
@@ -174,7 +173,7 @@ public class OrderService {
      * @throws BusinessException if order not found or invalid state transition
      */
     @Transactional
-    public Order acceptOrder(UUID orderId, UUID outletUserId) {
+    public Order acceptOrder(Long orderId, Long outletUserId) {
         log.info("Accepting order - orderId: {}, outletUserId: {}", orderId, outletUserId);
         Order order = getOrderById(orderId);
         validateTransition(order, OrderStatus.PAID);
@@ -210,7 +209,7 @@ public class OrderService {
      * @throws BusinessException if order not found or invalid state transition
      */
     @Transactional
-    public Order declineOrder(UUID orderId, String reason, UUID outletUserId) {
+    public Order declineOrder(Long orderId, String reason, Long outletUserId) {
         log.info("Declining order - orderId: {}, outletUserId: {}, reason: {}", orderId, outletUserId, reason);
         Order order = getOrderById(orderId);
         validateTransition(order, OrderStatus.DECLINED);
@@ -240,7 +239,7 @@ public class OrderService {
      * @throws BusinessException if order not found or invalid state transition
      */
     @Transactional
-    public Order startPreparing(UUID orderId, UUID outletUserId) {
+    public Order startPreparing(Long orderId, Long outletUserId) {
         log.info("Starting order preparation - orderId: {}, outletUserId: {}", orderId, outletUserId);
         Order order = getOrderById(orderId);
         validateTransition(order, OrderStatus.PREPARING);
@@ -266,7 +265,7 @@ public class OrderService {
      * @throws BusinessException if order not found or invalid state transition
      */
     @Transactional
-    public Order markReady(UUID orderId, UUID outletUserId) {
+    public Order markReady(Long orderId, Long outletUserId) {
         log.info("Marking order ready for pickup - orderId: {}, outletUserId: {}", orderId, outletUserId);
         Order order = getOrderById(orderId);
         validateTransition(order, OrderStatus.READY_FOR_PICKUP);
@@ -293,7 +292,7 @@ public class OrderService {
      * @throws BusinessException if invalid pickup code or invalid state transition
      */
     @Transactional
-    public Order verifyPickup(UUID orderId, String pickupCode, UUID outletUserId) {
+    public Order verifyPickup(Long orderId, String pickupCode, Long outletUserId) {
         log.info("Verifying pickup - orderId: {}, outletUserId: {}", orderId, outletUserId);
         Order order = getOrderById(orderId);
         validateTransition(order, OrderStatus.PICKED_UP);
@@ -322,7 +321,7 @@ public class OrderService {
      * @throws BusinessException if order not found or invalid state transition
      */
     @Transactional
-    public Order completeOrder(UUID orderId) {
+    public Order completeOrder(Long orderId) {
         log.info("Completing order - orderId: {}", orderId);
         Order order = getOrderById(orderId);
         validateTransition(order, OrderStatus.COMPLETED);
@@ -348,7 +347,7 @@ public class OrderService {
      * @throws BusinessException if not authorized or order cannot be cancelled
      */
     @Transactional
-    public Order cancelOrder(UUID orderId, String reason, UUID userId) {
+    public Order cancelOrder(Long orderId, String reason, Long userId) {
         log.info("Processing order cancellation - orderId: {}, userId: {}, reason: {}", orderId, userId, reason);
         Order order = getOrderById(orderId);
         
@@ -387,7 +386,7 @@ public class OrderService {
      * @throws BusinessException if order cannot be cancelled
      */
     @Transactional
-    public Order cancelOrderBySystem(UUID orderId, String reason) {
+    public Order cancelOrderBySystem(Long orderId, String reason) {
         log.info("Processing system order cancellation - orderId: {}, reason: {}", orderId, reason);
         Order order = getOrderById(orderId);
         
@@ -421,7 +420,7 @@ public class OrderService {
      * @throws BusinessException if order not found or invalid state transition
      */
     @Transactional
-    public Order expireOrder(UUID orderId) {
+    public Order expireOrder(Long orderId) {
         log.info("Processing order expiration - orderId: {}", orderId);
         Order order = getOrderById(orderId);
         validateTransition(order, OrderStatus.EXPIRED);
@@ -444,7 +443,7 @@ public class OrderService {
      * @return the order entity
      * @throws BusinessException if order not found
      */
-    public Order getOrderById(UUID orderId) {
+    public Order getOrderById(Long orderId) {
         log.debug("Retrieving order - orderId: {}", orderId);
         return orderRepository.findById(orderId)
                 .orElseThrow(() -> {
@@ -461,7 +460,7 @@ public class OrderService {
      * @return the order entity
      * @throws BusinessException if order not found or not authorized
      */
-    public Order getOrderByIdForUser(UUID orderId, UUID userId) {
+    public Order getOrderByIdForUser(Long orderId, Long userId) {
         log.debug("Retrieving order for user - orderId: {}, userId: {}", orderId, userId);
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> {
@@ -515,7 +514,7 @@ public class OrderService {
      * @param pageable pagination parameters
      * @return page of user orders
      */
-    public Page<Order> getUserOrders(UUID userId, Pageable pageable) {
+    public Page<Order> getUserOrders(Long userId, Pageable pageable) {
         log.info("Retrieving orders for userId: {}, page: {}", userId, pageable.getPageNumber());
         Page<Order> result = orderRepository.findByUserId(userId, pageable);
         log.debug("Retrieved {} orders for userId: {}", result.getTotalElements(), userId);
@@ -529,7 +528,7 @@ public class OrderService {
      * @param pageable pagination parameters
      * @return page of outlet orders
      */
-    public Page<Order> getOutletOrders(UUID outletId, Pageable pageable) {
+    public Page<Order> getOutletOrders(Long outletId, Pageable pageable) {
         log.info("Retrieving orders for outletId: {}, page: {}", outletId, pageable.getPageNumber());
         Page<Order> result = orderRepository.findByOutletId(outletId, pageable);
         log.debug("Retrieved {} orders for outletId: {}", result.getTotalElements(), outletId);
@@ -544,7 +543,7 @@ public class OrderService {
      * @param pageable pagination parameters
      * @return page of filtered outlet orders
      */
-    public Page<Order> getOutletOrdersByStatus(UUID outletId, OrderStatus status, Pageable pageable) {
+    public Page<Order> getOutletOrdersByStatus(Long outletId, OrderStatus status, Pageable pageable) {
         log.info("Retrieving orders for outletId: {}, status: {}", outletId, status);
         Page<Order> result = orderRepository.findByOutletIdAndStatus(outletId, status, pageable);
         log.debug("Retrieved {} orders for outletId: {} with status: {}", result.getTotalElements(), outletId, status);
@@ -557,7 +556,7 @@ public class OrderService {
      * @param userId the user ID
      * @return list of active orders
      */
-    public List<Order> getActiveOrdersForUser(UUID userId) {
+    public List<Order> getActiveOrdersForUser(Long userId) {
         log.info("Retrieving active orders for userId: {}", userId);
         List<OrderStatus> activeStatuses = List.of(
                 OrderStatus.CREATED,
@@ -583,7 +582,7 @@ public class OrderService {
      * @throws BusinessException if not authorized, order not completed, or review period expired
      */
     @Transactional
-    public Order submitReview(UUID orderId, Integer rating, String review, UUID userId) {
+    public Order submitReview(Long orderId, Integer rating, String review, Long userId) {
         log.info("Submitting review - orderId: {}, userId: {}, rating: {}", orderId, userId, rating);
         Order order = getOrderById(orderId);
 

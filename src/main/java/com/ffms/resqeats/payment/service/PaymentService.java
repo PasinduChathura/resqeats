@@ -55,13 +55,13 @@ public class PaymentService {
      * Validates payment method ownership to ensure security.</p>
      *
      * @param order the order requiring payment authorization
-     * @param paymentMethodId the UUID of the payment method to use
+     * @param paymentMethodId the ID of the payment method to use
      * @return the authorized Payment entity
      * @throws BusinessException with code PAY_001 when payment already exists or authorization fails
      * @throws BusinessException with code PAY_003 when payment method is invalid, expired, inactive, or not owned by user
      */
     @Transactional
-    public Payment preAuthorize(Order order, UUID paymentMethodId) {
+    public Payment preAuthorize(Order order, Long paymentMethodId) {
         log.info("Pre-authorizing payment for order: {}, paymentMethodId: {}", order.getId(), paymentMethodId);
         
         String idempotencyKey = "preauth:" + order.getId();
@@ -141,12 +141,12 @@ public class PaymentService {
      * <p>Per BR-004, this method is called only upon outlet acceptance of the order.
      * The payment must be in AUTHORIZED status to be captured.</p>
      *
-     * @param orderId the UUID of the order whose payment should be captured
+     * @param orderId the ID of the order whose payment should be captured
      * @return the captured Payment entity
      * @throws BusinessException with code PAY_002 when payment not found, cannot be captured, or capture fails
      */
     @Transactional
-    public Payment capturePayment(UUID orderId) {
+    public Payment capturePayment(Long orderId) {
         log.info("Capturing payment for order: {}", orderId);
         
         Payment payment = paymentRepository.findByOrderId(orderId)
@@ -189,12 +189,12 @@ public class PaymentService {
      * the order times out. If the payment cannot be voided (already in terminal state),
      * the method returns the existing payment without throwing an exception.</p>
      *
-     * @param orderId the UUID of the order whose payment should be voided
+     * @param orderId the ID of the order whose payment should be voided
      * @return the voided Payment entity or existing payment if already in terminal state
      * @throws BusinessException with code PAY_002 when payment not found or void operation fails
      */
     @Transactional
-    public Payment voidPreAuthorization(UUID orderId) {
+    public Payment voidPreAuthorization(Long orderId) {
         log.info("Voiding pre-authorization for order: {}", orderId);
         
         Payment payment = paymentRepository.findByOrderId(orderId)
@@ -233,13 +233,13 @@ public class PaymentService {
      * <p>Only payments in CAPTURED status can be refunded. The refund reason is recorded
      * for audit purposes.</p>
      *
-     * @param orderId the UUID of the order whose payment should be refunded
+     * @param orderId the ID of the order whose payment should be refunded
      * @param reason the reason for the refund
      * @return the refunded Payment entity
      * @throws BusinessException with code PAY_002 when payment not found, cannot be refunded, or refund fails
      */
     @Transactional
-    public Payment refundPayment(UUID orderId, String reason) {
+    public Payment refundPayment(Long orderId, String reason) {
         log.info("Processing refund for order: {}, reason: {}", orderId, reason);
         
         Payment payment = paymentRepository.findByOrderId(orderId)
@@ -316,11 +316,11 @@ public class PaymentService {
     /**
      * Retrieves a payment by its associated order ID.
      *
-     * @param orderId the UUID of the order
+     * @param orderId the ID of the order
      * @return the Payment entity associated with the order
      * @throws BusinessException with code PAY_002 when payment not found for the order
      */
-    public Payment getPaymentByOrderId(UUID orderId) {
+    public Payment getPaymentByOrderId(Long orderId) {
         log.info("Fetching payment for orderId: {}", orderId);
         Payment payment = paymentRepository.findByOrderId(orderId)
                 .orElseThrow(() -> {
@@ -337,12 +337,12 @@ public class PaymentService {
      * <p>If this is the user's first payment method, it is automatically set as default.
      * If the request specifies setAsDefault, all other payment methods are updated to non-default.</p>
      *
-     * @param userId the UUID of the user
+     * @param userId the ID of the user
      * @param request the payment method details including card information
      * @return the created PaymentMethod entity
      */
     @Transactional
-    public PaymentMethod addPaymentMethod(UUID userId, AddPaymentMethodRequest request) {
+    public PaymentMethod addPaymentMethod(Long userId, AddPaymentMethodRequest request) {
         log.info("Adding payment method for user: {}, cardBrand: {}", userId, detectCardBrand(request.getCardNumber()));
         
         String token = "tok_" + UUID.randomUUID().toString();
@@ -378,10 +378,10 @@ public class PaymentService {
     /**
      * Retrieves all active payment methods for a user.
      *
-     * @param userId the UUID of the user
+     * @param userId the ID of the user
      * @return list of active PaymentMethod entities for the user
      */
-    public List<PaymentMethod> getUserPaymentMethods(UUID userId) {
+    public List<PaymentMethod> getUserPaymentMethods(Long userId) {
         log.info("Fetching payment methods for user: {}", userId);
         List<PaymentMethod> paymentMethods = paymentMethodRepository.findByUserIdAndIsActiveTrue(userId);
         log.debug("Found {} active payment methods for user: {}", paymentMethods.size(), userId);
@@ -391,10 +391,10 @@ public class PaymentService {
     /**
      * Retrieves the default payment method for a user.
      *
-     * @param userId the UUID of the user
+     * @param userId the ID of the user
      * @return the default PaymentMethod entity, or null if no default is set
      */
-    public PaymentMethod getDefaultPaymentMethod(UUID userId) {
+    public PaymentMethod getDefaultPaymentMethod(Long userId) {
         log.info("Fetching default payment method for user: {}", userId);
         PaymentMethod paymentMethod = paymentMethodRepository.findByUserIdAndIsDefaultTrue(userId)
                 .orElse(null);
@@ -413,13 +413,13 @@ public class PaymentService {
      * <p>The payment method is soft-deleted by setting isActive to false.
      * Only the owner of the payment method can remove it.</p>
      *
-     * @param paymentMethodId the UUID of the payment method to remove
-     * @param userId the UUID of the user requesting the removal
+     * @param paymentMethodId the ID of the payment method to remove
+     * @param userId the ID of the user requesting the removal
      * @throws BusinessException with code PAY_003 when payment method not found
      * @throws BusinessException with code AUTH_003 when user is not the owner
      */
     @Transactional
-    public void removePaymentMethod(UUID paymentMethodId, UUID userId) {
+    public void removePaymentMethod(Long paymentMethodId, Long userId) {
         log.info("Removing payment method: paymentMethodId={}, userId={}", paymentMethodId, userId);
         
         PaymentMethod paymentMethod = paymentMethodRepository.findById(paymentMethodId)
@@ -446,13 +446,13 @@ public class PaymentService {
      * <p>Clears the default flag from all other payment methods before setting
      * the specified one as default. Only the owner can set a payment method as default.</p>
      *
-     * @param paymentMethodId the UUID of the payment method to set as default
-     * @param userId the UUID of the user
+     * @param paymentMethodId the ID of the payment method to set as default
+     * @param userId the ID of the user
      * @throws BusinessException with code PAY_003 when payment method not found
      * @throws BusinessException with code AUTH_003 when user is not the owner
      */
     @Transactional
-    public void setDefaultPaymentMethod(UUID paymentMethodId, UUID userId) {
+    public void setDefaultPaymentMethod(Long paymentMethodId, Long userId) {
         log.info("Setting default payment method: paymentMethodId={}, userId={}", paymentMethodId, userId);
         
         PaymentMethod paymentMethod = paymentMethodRepository.findById(paymentMethodId)

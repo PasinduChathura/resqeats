@@ -12,7 +12,6 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * Filter DTO for item list queries.
@@ -26,10 +25,10 @@ import java.util.UUID;
 public class ItemFilterDto {
 
     @Schema(description = "Filter by merchant ID")
-    private UUID merchantId;
+    private Long merchantId;
 
     @Schema(description = "Filter by outlet ID (items available at specific outlet)")
-    private UUID outletId;
+    private Long outletId;
 
     @Schema(description = "Filter by item category (MEAL, BAKERY, GROCERY, BEVERAGE, OTHER)")
     private ItemCategory category;

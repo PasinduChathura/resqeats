@@ -20,7 +20,6 @@ import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * Item entity per SRS Section 7.2.
@@ -35,7 +34,7 @@ import java.util.UUID;
         @Index(name = "idx_item_status", columnList = "status"),
         @Index(name = "idx_item_type", columnList = "item_type")
 })
-@FilterDef(name = "itemMerchantFilter", parameters = @ParamDef(name = "merchantId", type = String.class))
+@FilterDef(name = "itemMerchantFilter", parameters = @ParamDef(name = "merchantId", type = Long.class))
 @Filter(name = "itemMerchantFilter", condition = "merchant_id = :merchantId")
 @TenantScoped(TenantScopeType.MERCHANT)
 @Getter
@@ -48,7 +47,7 @@ public class Item extends BaseEntity {
     @NotNull
     @Column(name = "merchant_id", nullable = false)
     @JsonProperty("merchant_id")
-    private UUID merchantId;
+    private Long merchantId;
 
     @NotBlank
     @Column(name = "name", length = 255, nullable = false)

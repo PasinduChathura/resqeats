@@ -18,9 +18,9 @@ import java.util.List;
  * 
  * SCOPE FILTERING:
  * - ADMIN/SUPER_ADMIN: No automatic scope filtering (full access)
- * - MERCHANT: Automatically scoped to merchant's outlets
+ * - MERCHANT_USER: Automatically scoped to merchant's outlets
  * - OUTLET_USER: Automatically scoped to own outlet
- * - USER/Anonymous: Only ACTIVE outlets (public data)
+ * - CUSTOMER_USER/Anonymous: Only ACTIVE outlets (public data)
  */
 public class OutletSpecification {
 
@@ -42,16 +42,16 @@ public class OutletSpecification {
                 predicates.add(criteriaBuilder.equal(root.get("status"), 
                         com.ffms.resqeats.outlet.enums.OutletStatus.ACTIVE));
             } else if (!context.hasGlobalAccess()) {
-                // MERCHANT - scope to merchant's outlets
-                if (context.getRole() == UserRole.MERCHANT && context.getMerchantId() != null) {
+                // MERCHANT_USER - scope to merchant's outlets
+                if (context.getRole() == UserRole.MERCHANT_USER && context.getMerchantId() != null) {
                     predicates.add(criteriaBuilder.equal(root.get("merchantId"), context.getMerchantId()));
                 }
                 // OUTLET_USER - scope to own outlet only
                 else if (context.getRole() == UserRole.OUTLET_USER && context.getOutletId() != null) {
                     predicates.add(criteriaBuilder.equal(root.get("id"), context.getOutletId()));
                 }
-                // USER - only ACTIVE outlets (public data)
-                else if (context.getRole() == UserRole.USER) {
+                // CUSTOMER_USER - only ACTIVE outlets (public data)
+                else if (context.getRole() == UserRole.CUSTOMER_USER) {
                     predicates.add(criteriaBuilder.equal(root.get("status"), 
                             com.ffms.resqeats.outlet.enums.OutletStatus.ACTIVE));
                 }

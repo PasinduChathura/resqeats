@@ -11,7 +11,6 @@ import org.hibernate.annotations.FilterDef;
 import org.hibernate.annotations.ParamDef;
 
 import java.math.BigDecimal;
-import java.util.UUID;
 
 /**
  * OrderItem entity per SRS Section 7.2.
@@ -22,7 +21,7 @@ import java.util.UUID;
         @Index(name = "idx_order_item_order", columnList = "order_id"),
         @Index(name = "idx_order_item_item", columnList = "item_id")
 })
-@FilterDef(name = "orderItemOrderFilter", parameters = @ParamDef(name = "orderId", type = String.class))
+@FilterDef(name = "orderItemOrderFilter", parameters = @ParamDef(name = "orderId", type = Long.class))
 @Filter(name = "orderItemOrderFilter", condition = "order_id = :orderId")
 @Getter
 @Setter
@@ -34,12 +33,12 @@ public class OrderItem extends BaseEntity {
     @NotNull
     @Column(name = "order_id", nullable = false)
     @JsonProperty("order_id")
-    private UUID orderId;
+    private Long orderId;
 
     @NotNull
     @Column(name = "item_id", nullable = false)
     @JsonProperty("item_id")
-    private UUID itemId;
+    private Long itemId;
 
     @NotNull
     @Positive

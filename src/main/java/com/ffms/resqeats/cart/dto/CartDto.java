@@ -10,7 +10,6 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * Cart DTO for responses.
@@ -22,10 +21,10 @@ import java.util.UUID;
 public class CartDto {
 
     @JsonProperty("user_id")
-    private UUID userId;
+    private Long userId;
 
     @JsonProperty("outlet_id")
-    private UUID outletId;
+    private Long outletId;
 
     private List<CartItemDto> items;
 
@@ -50,7 +49,7 @@ public class CartDto {
     /**
      * Create empty cart.
      */
-    public static CartDto empty(UUID userId) {
+    public static CartDto empty(Long userId) {
         return CartDto.builder()
                 .userId(userId)
                 .items(new ArrayList<>())

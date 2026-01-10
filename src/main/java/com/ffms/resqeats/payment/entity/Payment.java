@@ -14,7 +14,6 @@ import org.hibernate.annotations.ParamDef;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 /**
  * Payment entity per SRS Section 7.2.
@@ -35,7 +34,7 @@ import java.util.UUID;
         @Index(name = "idx_payment_status", columnList = "status"),
         @Index(name = "idx_payment_ipg_txn", columnList = "ipg_transaction_id")
 })
-@FilterDef(name = "paymentOrderFilter", parameters = @ParamDef(name = "orderId", type = String.class))
+@FilterDef(name = "paymentOrderFilter", parameters = @ParamDef(name = "orderId", type = Long.class))
 @Filter(name = "paymentOrderFilter", condition = "order_id = :orderId")
 @TenantScoped(value = TenantScopeType.USER, allowNull = true)
 @Getter
@@ -48,7 +47,7 @@ public class Payment extends BaseEntity {
     @NotNull
     @Column(name = "order_id", nullable = false, unique = true)
     @JsonProperty("order_id")
-    private UUID orderId;
+    private Long orderId;
 
     @NotNull
     @Column(name = "amount", precision = 10, scale = 2, nullable = false)
@@ -137,7 +136,7 @@ public class Payment extends BaseEntity {
      */
     @Column(name = "payment_method_id")
     @JsonProperty("payment_method_id")
-    private UUID paymentMethodId;
+    private Long paymentMethodId;
 
     /**
      * Idempotency key to prevent duplicate operations.

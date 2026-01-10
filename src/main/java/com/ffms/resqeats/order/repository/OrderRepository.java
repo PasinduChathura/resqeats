@@ -15,7 +15,6 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * Order repository per SRS Section 6.8.
@@ -38,34 +37,34 @@ public interface OrderRepository extends BaseScopedRepository<Order>, JpaSpecifi
     // ============== USER-SCOPED METHODS ==============
     // These are automatically filtered by userFilter for USER role
     
-    Page<Order> findByUserId(UUID userId, Pageable pageable);
+    Page<Order> findByUserId(Long userId, Pageable pageable);
 
     @Query("SELECT o FROM Order o WHERE o.userId = :userId AND o.status IN :statuses ORDER BY o.createdAt DESC")
-    List<Order> findActiveOrdersByUserId(@Param("userId") UUID userId, 
+    List<Order> findActiveOrdersByUserId(@Param("userId") Long userId, 
                                           @Param("statuses") List<OrderStatus> statuses);
 
     // ============== OUTLET-SCOPED METHODS ==============
     // These are automatically filtered by outletFilter for OUTLET_USER role
     
-    Page<Order> findByOutletId(UUID outletId, Pageable pageable);
+    Page<Order> findByOutletId(Long outletId, Pageable pageable);
 
-    Page<Order> findByOutletIdAndStatus(UUID outletId, OrderStatus status, Pageable pageable);
+    Page<Order> findByOutletIdAndStatus(Long outletId, OrderStatus status, Pageable pageable);
 
-    List<Order> findByOutletIdAndStatusIn(UUID outletId, List<OrderStatus> statuses);
+    List<Order> findByOutletIdAndStatusIn(Long outletId, List<OrderStatus> statuses);
 
     @Query("SELECT COUNT(o) FROM Order o WHERE o.outletId = :outletId AND o.status IN :statuses " +
            "AND o.createdAt >= :since")
-    long countByOutletIdAndStatusesSince(@Param("outletId") UUID outletId,
+        long countByOutletIdAndStatusesSince(@Param("outletId") Long outletId,
                                           @Param("statuses") List<OrderStatus> statuses,
                                           @Param("since") LocalDateTime since);
 
     @Query("SELECT SUM(o.total) FROM Order o WHERE o.outletId = :outletId AND o.status = 'COMPLETED' " +
            "AND o.completedAt >= :since")
-    java.math.BigDecimal sumRevenueByOutletIdSince(@Param("outletId") UUID outletId,
+        java.math.BigDecimal sumRevenueByOutletIdSince(@Param("outletId") Long outletId,
                                                     @Param("since") LocalDateTime since);
 
     @Query("SELECT o FROM Order o WHERE o.outletId IN :outletIds ORDER BY o.createdAt DESC")
-    Page<Order> findByOutletIds(@Param("outletIds") List<UUID> outletIds, Pageable pageable);
+    Page<Order> findByOutletIds(@Param("outletIds") List<Long> outletIds, Pageable pageable);
 
     // ============== SYSTEM/SCHEDULED TASK METHODS ==============
     // These bypass tenant filtering for system operations
@@ -101,7 +100,7 @@ public interface OrderRepository extends BaseScopedRepository<Order>, JpaSpecifi
 
     /**
      * Get current user's orders based on role.
-     * - USER: Their own orders
+        * - CUSTOMER_USER: Their own orders
      * - OUTLET_USER: Their outlet's orders
      * - MERCHANT: All orders from their outlets
      */
@@ -112,7 +111,7 @@ public interface OrderRepository extends BaseScopedRepository<Order>, JpaSpecifi
             return findAll(pageable);
         }
         
-        if (context.getRole() == UserRole.USER && context.getUserId() != null) {
+        if (context.getRole() == UserRole.CUSTOMER_USER && context.getUserId() != null) {
             return findByUserId(context.getUserId(), pageable);
         }
         

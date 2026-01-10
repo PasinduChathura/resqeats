@@ -19,7 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * Service for managing notifications across multiple channels.
@@ -296,7 +295,7 @@ public class NotificationService {
      * @param orderNumber the order number associated with the payment
      */
     @Async
-    public void notifyPaymentSuccess(UUID userId, String orderNumber) {
+        public void notifyPaymentSuccess(Long userId, String orderNumber) {
         log.info("Sending payment success notification to user: {} for order: {}", userId, orderNumber);
         
         createAndSendNotification(
@@ -321,7 +320,7 @@ public class NotificationService {
      * @param reason the reason for payment failure
      */
     @Async
-    public void notifyPaymentFailed(UUID userId, String orderNumber, String reason) {
+        public void notifyPaymentFailed(Long userId, String orderNumber, String reason) {
         log.warn("Sending payment failed notification to user: {} for order: {} - reason: {}", 
                 userId, orderNumber, reason);
         
@@ -347,7 +346,7 @@ public class NotificationService {
      * @param pageable pagination parameters for the query
      * @return a page of notifications belonging to the user
      */
-    public Page<Notification> getUserNotifications(UUID userId, Pageable pageable) {
+        public Page<Notification> getUserNotifications(Long userId, Pageable pageable) {
         log.info("Retrieving notifications for user: {} with page: {}", userId, pageable.getPageNumber());
         
         Page<Notification> notifications = notificationRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
@@ -365,7 +364,7 @@ public class NotificationService {
      * @param userId the unique identifier of the user
      * @return the count of unread notifications
      */
-    public long getUnreadCount(UUID userId) {
+        public long getUnreadCount(Long userId) {
         log.debug("Getting unread notification count for user: {}", userId);
         
         long count = notificationRepository.countUnreadByUserId(userId);
@@ -384,7 +383,7 @@ public class NotificationService {
      * @param userId the unique identifier of the user (for ownership verification)
      */
     @Transactional
-    public void markAsRead(UUID notificationId, UUID userId) {
+        public void markAsRead(Long notificationId, Long userId) {
         log.info("Marking notification: {} as read for user: {}", notificationId, userId);
         
         Notification notification = notificationRepository.findById(notificationId)
@@ -417,7 +416,7 @@ public class NotificationService {
      * @param userId the unique identifier of the user
      */
     @Transactional
-    public void markAllAsRead(UUID userId) {
+        public void markAllAsRead(Long userId) {
         log.info("Marking all notifications as read for user: {}", userId);
         
         notificationRepository.markAllAsReadByUserId(userId, LocalDateTime.now());
@@ -435,7 +434,7 @@ public class NotificationService {
      * @param userId the unique identifier of the user (for ownership verification)
      */
     @Transactional
-    public void deleteNotification(UUID notificationId, UUID userId) {
+        public void deleteNotification(Long notificationId, Long userId) {
         log.info("Deleting notification: {} for user: {}", notificationId, userId);
         
         Notification notification = notificationRepository.findById(notificationId)
@@ -468,7 +467,7 @@ public class NotificationService {
      * @param deviceType the type of device (e.g., iOS, Android)
      */
     @Transactional
-    public void registerPushToken(UUID userId, String fcmToken, String deviceType) {
+        public void registerPushToken(Long userId, String fcmToken, String deviceType) {
         log.info("Registering FCM token for user: {} on device type: {}", userId, deviceType);
         
         User user = userRepository.findById(userId).orElse(null);
@@ -492,7 +491,7 @@ public class NotificationService {
      * @param userId the unique identifier of the user
      */
     @Transactional
-    public void unregisterPushToken(UUID userId) {
+        public void unregisterPushToken(Long userId) {
         log.info("Unregistering FCM token for user: {}", userId);
         
         User user = userRepository.findById(userId).orElse(null);
@@ -520,7 +519,7 @@ public class NotificationService {
      * @param message the notification message body
      * @param data additional data to include with the notification
      */
-    private void createAndSendNotification(UUID userId, NotificationType type, 
+        private void createAndSendNotification(Long userId, NotificationType type, 
                                             String title, String message, Map<String, String> data) {
         log.debug("Creating notification for user: {} with type: {} and title: {}", userId, type, title);
         
@@ -562,7 +561,7 @@ public class NotificationService {
      * @param body the notification body text
      * @param data additional data payload for the notification
      */
-    private void sendPushNotification(UUID userId, String title, String body, Map<String, String> data) {
+        private void sendPushNotification(Long userId, String title, String body, Map<String, String> data) {
         log.debug("Attempting to send push notification to user: {}", userId);
         
         User user = userRepository.findById(userId).orElse(null);

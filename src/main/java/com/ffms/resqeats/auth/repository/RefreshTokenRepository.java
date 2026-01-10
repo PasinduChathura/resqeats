@@ -9,7 +9,6 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * Refresh token repository per SRS Section 6.2.
@@ -19,14 +18,14 @@ public interface RefreshTokenRepository extends com.ffms.resqeats.common.reposit
 
     Optional<RefreshToken> findByToken(String token);
 
-    List<RefreshToken> findByUserIdAndRevokedFalse(UUID userId);
+    List<RefreshToken> findByUserIdAndRevokedFalse(Long userId);
 
     @Query("SELECT COUNT(r) FROM RefreshToken r WHERE r.userId = :userId AND r.revoked = false AND r.expiresAt > :now")
-    long countActiveSessionsByUserId(@Param("userId") UUID userId, @Param("now") LocalDateTime now);
+    long countActiveSessionsByUserId(@Param("userId") Long userId, @Param("now") LocalDateTime now);
 
     @Modifying
     @Query("UPDATE RefreshToken r SET r.revoked = true, r.revokedAt = :now WHERE r.userId = :userId AND r.revoked = false")
-    void revokeAllByUserId(@Param("userId") UUID userId, @Param("now") LocalDateTime now);
+    void revokeAllByUserId(@Param("userId") Long userId, @Param("now") LocalDateTime now);
 
     @Modifying
     @Query("DELETE FROM RefreshToken r WHERE r.expiresAt < :now OR r.revoked = true")

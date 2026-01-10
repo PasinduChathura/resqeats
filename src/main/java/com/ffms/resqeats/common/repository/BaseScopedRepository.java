@@ -10,7 +10,6 @@ import org.springframework.data.repository.NoRepositoryBean;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * Base repository with built-in tenant scope enforcement.
@@ -22,13 +21,13 @@ import java.util.UUID;
  * This provides additional GUARD layer for explicit scope validation.
  */
 @NoRepositoryBean
-public interface BaseScopedRepository<T extends BaseEntity> extends JpaRepository<T, UUID> {
+public interface BaseScopedRepository<T extends BaseEntity> extends JpaRepository<T, Long> {
 
     /**
      * Find by ID with scope validation.
      * Automatically validates that the entity belongs to the current user's scope.
      */
-    default Optional<T> findByIdScoped(UUID id) {
+    default Optional<T> findByIdScoped(Long id) {
         Optional<T> entity = findById(id);
         entity.ifPresent(this::validateScope);
         return entity;
@@ -62,7 +61,7 @@ public interface BaseScopedRepository<T extends BaseEntity> extends JpaRepositor
     /**
      * Delete by ID with scope validation.
      */
-    default void deleteByIdScoped(UUID id) {
+    default void deleteByIdScoped(Long id) {
         findByIdScoped(id).ifPresent(this::delete);
     }
 
@@ -91,7 +90,7 @@ public interface BaseScopedRepository<T extends BaseEntity> extends JpaRepositor
     /**
      * Utility method to check merchant scope.
      */
-    default void requireMerchantScope(UUID entityMerchantId) {
+    default void requireMerchantScope(Long entityMerchantId) {
         ResqeatsSecurityContext context = SecurityContextHolder.getContext();
         
         if (context.hasGlobalAccess()) {
@@ -102,7 +101,7 @@ public interface BaseScopedRepository<T extends BaseEntity> extends JpaRepositor
             throw new AccessDeniedException("Entity has no merchant scope");
         }
         
-        UUID userMerchantId = context.getMerchantId();
+        Long userMerchantId = context.getMerchantId();
         if (userMerchantId == null || !userMerchantId.equals(entityMerchantId)) {
             throw new AccessDeniedException("Access denied: merchant scope mismatch");
         }
@@ -111,14 +110,14 @@ public interface BaseScopedRepository<T extends BaseEntity> extends JpaRepositor
     /**
      * Utility method to check outlet scope.
      */
-    default void requireOutletScope(UUID entityOutletId) {
+    default void requireOutletScope(Long entityOutletId) {
         ResqeatsSecurityContext context = SecurityContextHolder.getContext();
         
         if (context.hasGlobalAccess()) {
             return;
         }
         
-        if (context.getRole() == UserRole.MERCHANT) {
+        if (context.getRole() == UserRole.MERCHANT_USER) {
             // Merchants can access all their outlets - validated by merchant filter
             return;
         }
@@ -127,7 +126,7 @@ public interface BaseScopedRepository<T extends BaseEntity> extends JpaRepositor
             throw new AccessDeniedException("Entity has no outlet scope");
         }
         
-        UUID userOutletId = context.getOutletId();
+        Long userOutletId = context.getOutletId();
         if (userOutletId == null || !userOutletId.equals(entityOutletId)) {
             throw new AccessDeniedException("Access denied: outlet scope mismatch");
         }
@@ -136,7 +135,7 @@ public interface BaseScopedRepository<T extends BaseEntity> extends JpaRepositor
     /**
      * Utility method to check user ownership scope.
      */
-    default void requireUserScope(UUID entityUserId) {
+    default void requireUserScope(Long entityUserId) {
         ResqeatsSecurityContext context = SecurityContextHolder.getContext();
         
         if (context.hasGlobalAccess()) {
@@ -147,7 +146,7 @@ public interface BaseScopedRepository<T extends BaseEntity> extends JpaRepositor
             throw new AccessDeniedException("Entity has no user scope");
         }
         
-        UUID currentUserId = context.getUserId();
+        Long currentUserId = context.getUserId();
         if (currentUserId == null || !currentUserId.equals(entityUserId)) {
             throw new AccessDeniedException("Access denied: user scope mismatch");
         }

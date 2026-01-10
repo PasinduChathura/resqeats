@@ -13,17 +13,17 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * Spring Security UserDetails implementation per SRS Section 6.2.
- * Uses UUID for user identification and enum-based RBAC.
+ * Uses Long for user identification and enum-based RBAC.
  */
 public class CustomUserDetails implements UserDetails, OAuth2User {
     private static final long serialVersionUID = 1L;
 
-    private UUID id;
+    private Long id;
     private String email;
     private String phone;
     private String role;
-    private UUID merchantId;
-    private UUID outletId;
+    private Long merchantId;
+    private Long outletId;
     private UserStatus status;
 
     @JsonIgnore
@@ -32,9 +32,9 @@ public class CustomUserDetails implements UserDetails, OAuth2User {
     private Collection<? extends GrantedAuthority> authorities;
     private Map<String, Object> attributes;
 
-    public CustomUserDetails(UUID id, String email, String phone, String password,
+    public CustomUserDetails(Long id, String email, String phone, String password,
                              Collection<? extends GrantedAuthority> authorities, 
-                             String role, UUID merchantId, UUID outletId, UserStatus status) {
+                             String role, Long merchantId, Long outletId, UserStatus status) {
         this.id = id;
         this.email = email;
         this.phone = phone;
@@ -46,9 +46,9 @@ public class CustomUserDetails implements UserDetails, OAuth2User {
         this.status = status;
     }
 
-    public CustomUserDetails(UUID id, String email, String phone, String password,
+    public CustomUserDetails(Long id, String email, String phone, String password,
                              Collection<? extends GrantedAuthority> authorities, 
-                             String role, UUID merchantId, UUID outletId, UserStatus status,
+                             String role, Long merchantId, Long outletId, UserStatus status,
                              Map<String, Object> attributes) {
         this(id, email, phone, password, authorities, role, merchantId, outletId, status);
         this.attributes = attributes;
@@ -57,11 +57,11 @@ public class CustomUserDetails implements UserDetails, OAuth2User {
     public static CustomUserDetails build(User user) {
         List<GrantedAuthority> authorities = new ArrayList<>();
         
-        // Add role-based authority (ROLE_ADMIN, ROLE_MERCHANT, ROLE_OUTLET_USER, ROLE_USER)
+        // Add role-based authority (ROLE_ADMIN, ROLE_MERCHANT_USER, ROLE_OUTLET_USER, ROLE_CUSTOMER_USER)
         if (user.getRole() != null) {
             authorities.add(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));
         } else {
-            authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
+            authorities.add(new SimpleGrantedAuthority("ROLE_CUSTOMER_USER"));
         }
 
         return new CustomUserDetails(
@@ -70,7 +70,7 @@ public class CustomUserDetails implements UserDetails, OAuth2User {
                 user.getPhone(),
                 user.getPasswordHash(),
                 authorities,
-                user.getRole() != null ? user.getRole().name() : "USER",
+                user.getRole() != null ? user.getRole().name() : "CUSTOMER_USER",
                 user.getMerchantId(),
                 user.getOutletId(),
                 user.getStatus());
@@ -99,7 +99,7 @@ public class CustomUserDetails implements UserDetails, OAuth2User {
         return authorities;
     }
 
-    public UUID getId() {
+    public Long getId() {
         return id;
     }
 
@@ -120,11 +120,11 @@ public class CustomUserDetails implements UserDetails, OAuth2User {
         return role;
     }
 
-    public UUID getMerchantId() {
+    public Long getMerchantId() {
         return merchantId;
     }
 
-    public UUID getOutletId() {
+    public Long getOutletId() {
         return outletId;
     }
 

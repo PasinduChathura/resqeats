@@ -51,7 +51,7 @@ public class UserService {
      * @return the user profile DTO
      * @throws BusinessException if the user is not found
      */
-    public UserDto getUserProfile(UUID userId) {
+    public UserDto getUserProfile(Long userId) {
         log.info("Retrieving user profile for userId: {}", userId);
         User user = getUserOrThrow(userId);
         log.debug("User profile retrieved successfully for userId: {}", userId);
@@ -67,7 +67,7 @@ public class UserService {
      * @throws BusinessException if the user is not found
      */
     @Transactional
-    public UserDto updateProfile(UUID userId, UpdateUserRequest request) {
+    public UserDto updateProfile(Long userId, UpdateUserRequest request) {
         log.info("Updating user profile for userId: {}", userId);
         User user = getUserOrThrow(userId);
 
@@ -95,7 +95,7 @@ public class UserService {
      * @throws BusinessException if the user is not found or current password is incorrect
      */
     @Transactional
-    public void changePassword(UUID userId, String currentPassword, String newPassword) {
+    public void changePassword(Long userId, String currentPassword, String newPassword) {
         log.info("Processing password change request for userId: {}", userId);
         User user = getUserOrThrow(userId);
 
@@ -116,7 +116,7 @@ public class UserService {
      * @throws BusinessException if the user is not found
      */
     @Transactional
-    public void deactivateAccount(UUID userId) {
+    public void deactivateAccount(Long userId) {
         log.info("Processing account deactivation for userId: {}", userId);
         User user = getUserOrThrow(userId);
         user.setStatus(UserStatus.INACTIVE);
@@ -160,7 +160,7 @@ public class UserService {
      * @return the user profile DTO
      * @throws BusinessException if the user is not found
      */
-    public UserDto getUserById(UUID userId) {
+    public UserDto getUserById(Long userId) {
         log.info("Admin retrieving user by userId: {}", userId);
         return toDto(getUserOrThrow(userId));
     }
@@ -174,7 +174,7 @@ public class UserService {
      * @throws BusinessException if the user is not found
      */
     @Transactional
-    public UserDto suspendUser(UUID userId, String reason) {
+    public UserDto suspendUser(Long userId, String reason) {
         log.info("Suspending user account for userId: {}, reason: {}", userId, reason);
         User user = getUserOrThrow(userId);
         user.setStatus(UserStatus.SUSPENDED);
@@ -191,7 +191,7 @@ public class UserService {
      * @throws BusinessException if the user is not found
      */
     @Transactional
-    public UserDto reactivateUser(UUID userId) {
+    public UserDto reactivateUser(Long userId) {
         log.info("Reactivating user account for userId: {}", userId);
         User user = getUserOrThrow(userId);
         user.setStatus(UserStatus.ACTIVE);
@@ -212,7 +212,7 @@ public class UserService {
      * @throws BusinessException if the email already exists
      */
     @Transactional
-    public UserDto createOutletUser(UUID outletId, String email, String firstName, String lastName, UUID merchantId) {
+    public UserDto createOutletUser(Long outletId, String email, String firstName, String lastName, Long merchantId) {
         log.info("Creating outlet user - email: {}, outletId: {}, merchantId: {}", email, outletId, merchantId);
         
         if (userRepository.existsByEmail(email)) {
@@ -248,7 +248,7 @@ public class UserService {
      * @return the user entity
      * @throws BusinessException if the user is not found
      */
-    private User getUserOrThrow(UUID userId) {
+    private User getUserOrThrow(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> {
                     log.warn("User not found - userId: {}", userId);
@@ -302,7 +302,7 @@ public class UserService {
             ;
 
         // MERCHANT role association (joined via EntityGraph)
-        if (user.getRole() == UserRole.MERCHANT && user.getMerchantId() != null) {
+        if (user.getRole() == UserRole.MERCHANT_USER && user.getMerchantId() != null) {
             var merchant = user.getMerchant();
             builder.merchantAssociation(UserListResponseDto.MerchantAssociation.builder()
                 .merchantId(user.getMerchantId())

@@ -19,8 +19,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.UUID;
-
 /**
  * Cart controller per SRS Section 6.2.
  *
@@ -37,7 +35,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Cart", description = "Cart management APIs")
-@PreAuthorize("hasRole('USER')")
+@PreAuthorize("hasRole('CUSTOMER_USER')")
 public class CartController {
 
     private final CartService cartService;
@@ -82,7 +80,7 @@ public class CartController {
     @Operation(summary = "Update item quantity")
     public ResponseEntity<ApiResponse<CartDto>> updateItemQuantity(
             @CurrentUser UserPrincipal currentUser,
-            @PathVariable UUID outletItemId,
+            @PathVariable Long outletItemId,
             @Valid @RequestBody UpdateQuantityRequest request) {
         log.info("Update cart item quantity for userId: {} - outletItemId: {}, quantity: {}", 
                 currentUser.getId(), outletItemId, request.getQuantity());
@@ -104,7 +102,7 @@ public class CartController {
     @Operation(summary = "Remove item from cart")
     public ResponseEntity<ApiResponse<CartDto>> removeItem(
             @CurrentUser UserPrincipal currentUser,
-            @PathVariable UUID outletItemId) {
+            @PathVariable Long outletItemId) {
         log.info("Remove item from cart for userId: {} - outletItemId: {}", currentUser.getId(), outletItemId);
         try {
             CartDto cart = cartService.removeItem(currentUser.getId(), outletItemId);
@@ -155,7 +153,7 @@ public class CartController {
     @AllArgsConstructor
     public static class AddToCartRequest {
         @NotNull(message = "Outlet item ID is required")
-        private UUID outletItemId;
+        private Long outletItemId;
 
         @NotNull(message = "Quantity is required")
         @Positive(message = "Quantity must be positive")

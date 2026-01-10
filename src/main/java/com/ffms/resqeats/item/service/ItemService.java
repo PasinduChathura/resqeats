@@ -34,7 +34,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -91,7 +90,7 @@ public class ItemService {
      * @throws BusinessException when merchant access validation fails or pricing rules are violated
      */
     @Transactional
-    public ItemDto createItem(UUID merchantId, CreateItemRequest request, UUID userId) {
+    public ItemDto createItem(Long merchantId, CreateItemRequest request, Long userId) {
         log.info("Creating item for merchant: {}, name: {}, type: {}, userId: {}", 
                 merchantId, request.getName(), request.getType(), userId);
         
@@ -147,7 +146,7 @@ public class ItemService {
      * @throws BusinessException when item is not found, access validation fails, or pricing rules are violated
      */
     @Transactional
-    public ItemDto updateItem(UUID itemId, UpdateItemRequest request, UUID userId) {
+    public ItemDto updateItem(Long itemId, UpdateItemRequest request, Long userId) {
         log.info("Updating item: {}, userId: {}", itemId, userId);
         
         Item item = getItemOrThrow(itemId);
@@ -207,7 +206,7 @@ public class ItemService {
      *                           item already exists at outlet, or access validation fails
      */
     @Transactional
-    public OutletItemDto addItemToOutlet(UUID outletId, UUID itemId, int quantity, UUID userId) {
+    public OutletItemDto addItemToOutlet(Long outletId, Long itemId, int quantity, Long userId) {
         log.info("Adding item to outlet - outletId: {}, itemId: {}, quantity: {}, userId: {}", 
                 outletId, itemId, quantity, userId);
         
@@ -261,7 +260,7 @@ public class ItemService {
      * @throws BusinessException when outlet item or outlet is not found, or access validation fails
      */
     @Transactional
-    public OutletItemDto updateOutletItem(UUID outletItemId, int quantity, UUID userId) {
+    public OutletItemDto updateOutletItem(Long outletItemId, int quantity, Long userId) {
         log.info("Updating outlet item quantity - outletItemId: {}, newQuantity: {}, userId: {}", 
                 outletItemId, quantity, userId);
         
@@ -307,7 +306,7 @@ public class ItemService {
      * @throws BusinessException when outlet item or outlet is not found, or access validation fails
      */
     @Transactional
-    public void removeItemFromOutlet(UUID outletItemId, UUID userId) {
+    public void removeItemFromOutlet(Long outletItemId, Long userId) {
         log.info("Removing item from outlet - outletItemId: {}, userId: {}", outletItemId, userId);
         
         OutletItem outletItem = outletItemRepository.findById(outletItemId)
@@ -340,7 +339,7 @@ public class ItemService {
      * @param outletItemId the unique identifier of the outlet item to mark as sold out
      */
     @Transactional
-    public void markSoldOut(UUID outletItemId) {
+    public void markSoldOut(Long outletItemId) {
         log.info("Marking item as sold out - outletItemId: {}", outletItemId);
         
         OutletItem outletItem = outletItemRepository.findById(outletItemId).orElse(null);
@@ -371,7 +370,7 @@ public class ItemService {
      * @param outletId the unique identifier of the outlet
      * @return list of available outlet items as DTOs
      */
-    public List<OutletItemDto> getOutletItems(UUID outletId) {
+    public List<OutletItemDto> getOutletItems(Long outletId) {
         log.info("Fetching outlet items for customer view - outletId: {}", outletId);
         
         List<OutletItemDto> items = outletItemRepository.findByOutletIdAndIsAvailableTrue(outletId).stream()
@@ -395,7 +394,7 @@ public class ItemService {
      * @param outletId the unique identifier of the outlet
      * @return list of available outlet items with real-time stock as DTOs
      */
-    public List<OutletItemDto> getAvailableOutletItems(UUID outletId) {
+    public List<OutletItemDto> getAvailableOutletItems(Long outletId) {
         log.info("Fetching available outlet items with real-time stock - outletId: {}", outletId);
         
         List<OutletItemDto> items = outletItemRepository.findAvailableByOutletId(outletId).stream()
@@ -420,7 +419,7 @@ public class ItemService {
      * @param pageable pagination parameters
      * @return paginated list of merchant items as DTOs
      */
-    public Page<ItemDto> getMerchantItems(UUID merchantId, Pageable pageable) {
+    public Page<ItemDto> getMerchantItems(Long merchantId, Pageable pageable) {
         log.info("Fetching merchant items - merchantId: {}, page: {}, size: {}", 
                 merchantId, pageable.getPageNumber(), pageable.getPageSize());
         
@@ -481,7 +480,7 @@ public class ItemService {
      * @return the item as a DTO
      * @throws BusinessException when item is not found
      */
-    public ItemDto getItem(UUID itemId) {
+    public ItemDto getItem(Long itemId) {
         log.info("Fetching item - itemId: {}", itemId);
         ItemDto item = toItemDto(getItemOrThrow(itemId));
         log.info("Item retrieved successfully - itemId: {}, name: {}", itemId, item.getName());
@@ -532,7 +531,7 @@ public class ItemService {
      * @return the item entity
      * @throws BusinessException when item is not found
      */
-    private Item getItemOrThrow(UUID itemId) {
+    private Item getItemOrThrow(Long itemId) {
         return itemRepository.findById(itemId)
                 .orElseThrow(() -> {
                     log.warn("Item not found - itemId: {}", itemId);
@@ -550,7 +549,7 @@ public class ItemService {
      * @param userId the unique identifier of the user
      * @throws BusinessException when user is not found or does not have access
      */
-    private void validateMerchantAccess(UUID merchantId, UUID userId) {
+    private void validateMerchantAccess(Long merchantId, Long userId) {
         log.debug("Validating merchant access - merchantId: {}, userId: {}", merchantId, userId);
         
         User user = userRepository.findById(userId)
@@ -587,7 +586,7 @@ public class ItemService {
      * @param userId the unique identifier of the user
      * @throws BusinessException when user is not found or does not have access
      */
-    private void validateOutletAccess(Outlet outlet, UUID userId) {
+    private void validateOutletAccess(Outlet outlet, Long userId) {
         log.debug("Validating outlet access - outletId: {}, userId: {}", outlet.getId(), userId);
         
         User user = userRepository.findById(userId)

@@ -12,8 +12,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Nested;
 
-import java.util.UUID;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -41,9 +39,9 @@ class RbacPolicyEngineTest {
         SecurityContextHolder.clearContext();
     }
 
-    private void setContext(UserRole role, UUID merchantId, UUID outletId) {
+    private void setContext(UserRole role, Long merchantId, Long outletId) {
         ResqeatsSecurityContext context = ResqeatsSecurityContext.builder()
-                .userId(UUID.randomUUID())
+                .userId(100L)
                 .role(role)
                 .merchantId(merchantId)
                 .outletId(outletId)
@@ -60,7 +58,7 @@ class RbacPolicyEngineTest {
         @Test
         @DisplayName("Should pass when authenticated")
         void shouldPassWhenAuthenticated() {
-            setContext(UserRole.USER, null, null);
+            setContext(UserRole.CUSTOMER_USER, null, null);
             assertDoesNotThrow(() -> rbacEngine.requireAuthenticated());
         }
 
@@ -83,9 +81,9 @@ class RbacPolicyEngineTest {
             
             assertDoesNotThrow(() -> rbacEngine.requireRole(UserRole.SUPER_ADMIN));
             assertDoesNotThrow(() -> rbacEngine.requireRole(UserRole.ADMIN));
-            assertDoesNotThrow(() -> rbacEngine.requireRole(UserRole.MERCHANT));
+            assertDoesNotThrow(() -> rbacEngine.requireRole(UserRole.MERCHANT_USER));
             assertDoesNotThrow(() -> rbacEngine.requireRole(UserRole.OUTLET_USER));
-            assertDoesNotThrow(() -> rbacEngine.requireRole(UserRole.USER));
+            assertDoesNotThrow(() -> rbacEngine.requireRole(UserRole.CUSTOMER_USER));
             assertDoesNotThrow(() -> rbacEngine.requireSuperAdmin());
             assertDoesNotThrow(() -> rbacEngine.requireAdmin());
         }
@@ -103,7 +101,7 @@ class RbacPolicyEngineTest {
         @Test
         @DisplayName("MERCHANT should fail ADMIN check")
         void merchantShouldFailAdminCheck() {
-            setContext(UserRole.MERCHANT, UUID.randomUUID(), null);
+            setContext(UserRole.MERCHANT_USER, 200L, null);
             
             assertThrows(InsufficientRoleException.class, () -> rbacEngine.requireAdmin());
             assertDoesNotThrow(() -> rbacEngine.requireMerchant());
@@ -113,7 +111,7 @@ class RbacPolicyEngineTest {
         @Test
         @DisplayName("USER should fail elevated role checks")
         void userShouldFailElevatedRoleChecks() {
-            setContext(UserRole.USER, null, null);
+            setContext(UserRole.CUSTOMER_USER, null, null);
             
             assertThrows(InsufficientRoleException.class, () -> rbacEngine.requireSuperAdmin());
             assertThrows(InsufficientRoleException.class, () -> rbacEngine.requireAdmin());
@@ -130,7 +128,7 @@ class RbacPolicyEngineTest {
         @DisplayName("ADMIN should access any merchant")
         void adminShouldAccessAnyMerchant() {
             setContext(UserRole.ADMIN, null, null);
-            UUID anyMerchantId = UUID.randomUUID();
+            Long anyMerchantId = 300L;
             
             assertDoesNotThrow(() -> rbacEngine.requireMerchantAccess(anyMerchantId));
         }
@@ -138,8 +136,8 @@ class RbacPolicyEngineTest {
         @Test
         @DisplayName("MERCHANT should access own merchant")
         void merchantShouldAccessOwnMerchant() {
-            UUID merchantId = UUID.randomUUID();
-            setContext(UserRole.MERCHANT, merchantId, null);
+            Long merchantId = 400L;
+            setContext(UserRole.MERCHANT_USER, merchantId, null);
             
             assertDoesNotThrow(() -> rbacEngine.requireMerchantAccess(merchantId));
         }
@@ -147,9 +145,9 @@ class RbacPolicyEngineTest {
         @Test
         @DisplayName("MERCHANT should NOT access other merchant")
         void merchantShouldNotAccessOtherMerchant() {
-            UUID ownMerchantId = UUID.randomUUID();
-            UUID otherMerchantId = UUID.randomUUID();
-            setContext(UserRole.MERCHANT, ownMerchantId, null);
+            Long ownMerchantId = 500L;
+            Long otherMerchantId = 501L;
+            setContext(UserRole.MERCHANT_USER, ownMerchantId, null);
             
             assertThrows(AccessDeniedException.class, 
                     () -> rbacEngine.requireMerchantAccess(otherMerchantId));
@@ -158,8 +156,8 @@ class RbacPolicyEngineTest {
         @Test
         @DisplayName("USER should NOT access merchant APIs")
         void userShouldNotAccessMerchantApis() {
-            setContext(UserRole.USER, null, null);
-            UUID merchantId = UUID.randomUUID();
+            setContext(UserRole.CUSTOMER_USER, null, null);
+            Long merchantId = 600L;
             
             assertThrows(AccessDeniedException.class, 
                     () -> rbacEngine.requireMerchantAccess(merchantId));
@@ -174,8 +172,8 @@ class RbacPolicyEngineTest {
         @DisplayName("ADMIN should access any outlet")
         void adminShouldAccessAnyOutlet() {
             setContext(UserRole.ADMIN, null, null);
-            UUID outletId = UUID.randomUUID();
-            UUID outletMerchantId = UUID.randomUUID();
+            Long outletId = 700L;
+            Long outletMerchantId = 701L;
             
             assertDoesNotThrow(() -> rbacEngine.requireOutletAccess(outletId, outletMerchantId));
         }
@@ -183,9 +181,9 @@ class RbacPolicyEngineTest {
         @Test
         @DisplayName("MERCHANT should access outlets they own")
         void merchantShouldAccessOwnedOutlets() {
-            UUID merchantId = UUID.randomUUID();
-            UUID outletId = UUID.randomUUID();
-            setContext(UserRole.MERCHANT, merchantId, null);
+            Long merchantId = 800L;
+            Long outletId = 801L;
+            setContext(UserRole.MERCHANT_USER, merchantId, null);
             
             assertDoesNotThrow(() -> rbacEngine.requireOutletAccess(outletId, merchantId));
         }
@@ -193,10 +191,10 @@ class RbacPolicyEngineTest {
         @Test
         @DisplayName("MERCHANT should NOT access outlets of other merchants")
         void merchantShouldNotAccessOtherMerchantsOutlets() {
-            UUID ownMerchantId = UUID.randomUUID();
-            UUID otherMerchantId = UUID.randomUUID();
-            UUID outletId = UUID.randomUUID();
-            setContext(UserRole.MERCHANT, ownMerchantId, null);
+            Long ownMerchantId = 900L;
+            Long otherMerchantId = 901L;
+            Long outletId = 902L;
+            setContext(UserRole.MERCHANT_USER, ownMerchantId, null);
             
             assertThrows(AccessDeniedException.class, 
                     () -> rbacEngine.requireOutletAccess(outletId, otherMerchantId));
@@ -205,8 +203,8 @@ class RbacPolicyEngineTest {
         @Test
         @DisplayName("OUTLET_USER should access assigned outlet")
         void outletUserShouldAccessAssignedOutlet() {
-            UUID merchantId = UUID.randomUUID();
-            UUID outletId = UUID.randomUUID();
+            Long merchantId = 1000L;
+            Long outletId = 1001L;
             setContext(UserRole.OUTLET_USER, merchantId, outletId);
             
             assertDoesNotThrow(() -> rbacEngine.requireOutletAccess(outletId, merchantId));
@@ -215,9 +213,9 @@ class RbacPolicyEngineTest {
         @Test
         @DisplayName("OUTLET_USER should NOT access other outlets")
         void outletUserShouldNotAccessOtherOutlets() {
-            UUID merchantId = UUID.randomUUID();
-            UUID assignedOutletId = UUID.randomUUID();
-            UUID otherOutletId = UUID.randomUUID();
+            Long merchantId = 1100L;
+            Long assignedOutletId = 1101L;
+            Long otherOutletId = 1102L;
             setContext(UserRole.OUTLET_USER, merchantId, assignedOutletId);
             
             assertThrows(AccessDeniedException.class, 
@@ -233,7 +231,7 @@ class RbacPolicyEngineTest {
         @DisplayName("ADMIN should access any user's data")
         void adminShouldAccessAnyUsersData() {
             setContext(UserRole.ADMIN, null, null);
-            UUID targetUserId = UUID.randomUUID();
+            Long targetUserId = 1200L;
             
             assertDoesNotThrow(() -> rbacEngine.requireUserAccess(targetUserId));
         }
@@ -241,10 +239,10 @@ class RbacPolicyEngineTest {
         @Test
         @DisplayName("User should access own data")
         void userShouldAccessOwnData() {
-            UUID userId = UUID.randomUUID();
+            Long userId = 1300L;
             ResqeatsSecurityContext context = ResqeatsSecurityContext.builder()
                     .userId(userId)
-                    .role(UserRole.USER)
+                    .role(UserRole.CUSTOMER_USER)
                     .anonymous(false)
                     .correlationId("test")
                     .build();
@@ -256,11 +254,11 @@ class RbacPolicyEngineTest {
         @Test
         @DisplayName("User should NOT access other user's data")
         void userShouldNotAccessOtherUsersData() {
-            UUID userId = UUID.randomUUID();
-            UUID otherUserId = UUID.randomUUID();
+            Long userId = 1400L;
+            Long otherUserId = 1401L;
             ResqeatsSecurityContext context = ResqeatsSecurityContext.builder()
                     .userId(userId)
-                    .role(UserRole.USER)
+                .role(UserRole.CUSTOMER_USER)
                     .anonymous(false)
                     .correlationId("test")
                     .build();
@@ -278,40 +276,40 @@ class RbacPolicyEngineTest {
         @Test
         @DisplayName("isResourceOwner should work correctly")
         void isResourceOwnerShouldWorkCorrectly() {
-            UUID userId = UUID.randomUUID();
+            Long userId = 1500L;
             ResqeatsSecurityContext context = ResqeatsSecurityContext.builder()
                     .userId(userId)
-                    .role(UserRole.USER)
+                    .role(UserRole.CUSTOMER_USER)
                     .anonymous(false)
                     .correlationId("test")
                     .build();
             SecurityContextHolder.setContext(context);
             
             assertTrue(rbacEngine.isResourceOwner(userId));
-            assertFalse(rbacEngine.isResourceOwner(UUID.randomUUID()));
+            assertFalse(rbacEngine.isResourceOwner(1501L));
             assertFalse(rbacEngine.isResourceOwner(null));
         }
 
         @Test
         @DisplayName("canAccessMerchant should work correctly")
         void canAccessMerchantShouldWorkCorrectly() {
-            UUID merchantId = UUID.randomUUID();
-            setContext(UserRole.MERCHANT, merchantId, null);
+            Long merchantId = 1600L;
+            setContext(UserRole.MERCHANT_USER, merchantId, null);
             
             assertTrue(rbacEngine.canAccessMerchant(merchantId));
-            assertFalse(rbacEngine.canAccessMerchant(UUID.randomUUID()));
+            assertFalse(rbacEngine.canAccessMerchant(1601L));
             assertFalse(rbacEngine.canAccessMerchant(null));
         }
 
         @Test
         @DisplayName("canAccessOutlet should work correctly for OUTLET_USER")
         void canAccessOutletShouldWorkCorrectlyForOutletUser() {
-            UUID merchantId = UUID.randomUUID();
-            UUID outletId = UUID.randomUUID();
+            Long merchantId = 1700L;
+            Long outletId = 1701L;
             setContext(UserRole.OUTLET_USER, merchantId, outletId);
             
             assertTrue(rbacEngine.canAccessOutlet(outletId));
-            assertFalse(rbacEngine.canAccessOutlet(UUID.randomUUID()));
+            assertFalse(rbacEngine.canAccessOutlet(1702L));
         }
     }
 }

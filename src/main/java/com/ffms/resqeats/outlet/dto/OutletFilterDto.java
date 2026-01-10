@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 /**
  * Filter DTO for outlet list queries.
@@ -23,7 +22,7 @@ import java.util.UUID;
 public class OutletFilterDto {
 
     @Schema(description = "Filter by merchant ID")
-    private UUID merchantId;
+    private Long merchantId;
 
     @Schema(description = "Filter by outlet status (ACTIVE, INACTIVE, SUSPENDED, PENDING)")
     private OutletStatus status;

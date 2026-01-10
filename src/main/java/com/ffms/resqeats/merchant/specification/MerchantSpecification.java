@@ -17,8 +17,8 @@ import java.util.List;
  * 
  * SCOPE FILTERING:
  * - ADMIN/SUPER_ADMIN: No automatic scope filtering (full access)
- * - MERCHANT/OUTLET_USER: Automatically scoped to own merchant
- * - USER: No access (blocked)
+ * - MERCHANT_USER/OUTLET_USER: Automatically scoped to own merchant
+ * - CUSTOMER_USER: No access (blocked)
  */
 public class MerchantSpecification {
 
@@ -36,13 +36,13 @@ public class MerchantSpecification {
             ResqeatsSecurityContext context = SecurityContextHolder.getContext();
             
             if (!context.isAnonymous() && !context.hasGlobalAccess()) {
-                // MERCHANT/OUTLET_USER - scope to own merchant only
-                if ((context.getRole() == UserRole.MERCHANT || context.getRole() == UserRole.OUTLET_USER) 
+                // MERCHANT_USER/OUTLET_USER - scope to own merchant only
+                if ((context.getRole() == UserRole.MERCHANT_USER || context.getRole() == UserRole.OUTLET_USER) 
                         && context.getMerchantId() != null) {
                     predicates.add(criteriaBuilder.equal(root.get("id"), context.getMerchantId()));
                 }
-                // USER - can only see APPROVED merchants (public data)
-                else if (context.getRole() == UserRole.USER) {
+                // CUSTOMER_USER - can only see APPROVED merchants (public data)
+                else if (context.getRole() == UserRole.CUSTOMER_USER) {
                     predicates.add(criteriaBuilder.equal(root.get("status"), 
                             com.ffms.resqeats.merchant.enums.MerchantStatus.APPROVED));
                 }

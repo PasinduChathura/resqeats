@@ -13,7 +13,6 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-import java.util.UUID;
 
 /**
  * Item repository per SRS Section 6.6.
@@ -30,20 +29,20 @@ public interface ItemRepository extends BaseScopedRepository<Item>, JpaSpecifica
     // ============== MERCHANT-SCOPED METHODS ==============
     // These are automatically filtered by merchantFilter for MERCHANT role
     
-    List<Item> findByMerchantId(UUID merchantId);
+    List<Item> findByMerchantId(Long merchantId);
 
-    Page<Item> findByMerchantId(UUID merchantId, Pageable pageable);
+    Page<Item> findByMerchantId(Long merchantId, Pageable pageable);
 
-    Page<Item> findByMerchantIdAndStatus(UUID merchantId, ItemStatus status, Pageable pageable);
+    Page<Item> findByMerchantIdAndStatus(Long merchantId, ItemStatus status, Pageable pageable);
 
     @Query("SELECT i FROM Item i WHERE i.merchantId = :merchantId AND " +
            "(i.name LIKE %:query% OR i.description LIKE %:query%)")
-    Page<Item> searchByMerchantIdAndQuery(@Param("merchantId") UUID merchantId,
+        Page<Item> searchByMerchantIdAndQuery(@Param("merchantId") Long merchantId,
                                           @Param("query") String query,
                                           Pageable pageable);
 
     @Query("SELECT COUNT(i) FROM Item i WHERE i.merchantId = :merchantId AND i.status = 'ACTIVE'")
-    long countActiveByMerchantId(@Param("merchantId") UUID merchantId);
+    long countActiveByMerchantId(@Param("merchantId") Long merchantId);
 
     // ============== ADMIN/PUBLIC ACCESS METHODS ==============
     

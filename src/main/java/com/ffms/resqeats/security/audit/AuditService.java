@@ -6,7 +6,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 /**
  * Centralized Audit Service for logging security-sensitive operations.
@@ -46,7 +45,7 @@ public class AuditService {
      * @param resourceId the unique identifier of the resource
      * @param action the action being performed (e.g., "VIEW", "UPDATE", "DELETE")
      */
-    public void logAdminAccess(String resourceType, UUID resourceId, String action) {
+    public void logAdminAccess(String resourceType, Long resourceId, String action) {
         log.debug("Checking audit requirement for admin access: {} on {} ({})",
                 action, resourceType, resourceId);
         ResqeatsSecurityContext context = SecurityContextHolder.getContext();
@@ -71,7 +70,7 @@ public class AuditService {
      * @param action the modification action (e.g., "CREATE", "UPDATE", "DELETE")
      * @param details additional details about the modification
      */
-    public void logDataModification(String entityType, UUID entityId, String action, String details) {
+    public void logDataModification(String entityType, Long entityId, String action, String details) {
         log.debug("Recording data modification: {} on {} ({})", action, entityType, entityId);
         ResqeatsSecurityContext context = SecurityContextHolder.getContext();
         log.info("{} | Action: {} | User: {} | Role: {} | Entity: {} | EntityId: {} | Details: {} | Time: {}",
@@ -132,7 +131,7 @@ public class AuditService {
      * @param entityId the unique identifier of the entity
      * @param targetTenantId the tenant ID that was attempted to be accessed
      */
-    public void logCrossTenantAttempt(String entityType, UUID entityId, UUID targetTenantId) {
+    public void logCrossTenantAttempt(String entityType, Long entityId, Long targetTenantId) {
         ResqeatsSecurityContext context = SecurityContextHolder.getContext();
         log.debug("CRITICAL: Cross-tenant access attempt detected for user {}", context.getUserId());
         log.error("{} | Event: CROSS_TENANT_ATTEMPT | User: {} | Role: {} | MerchantId: {} | Entity: {} | EntityId: {} | TargetTenant: {} | Time: {}",
@@ -151,7 +150,7 @@ public class AuditService {
      * @param subjectId the unique identifier of the data subject
      * @param reason the business reason for accessing the sensitive data
      */
-    public void logSensitiveDataAccess(String dataType, UUID subjectId, String reason) {
+    public void logSensitiveDataAccess(String dataType, Long subjectId, String reason) {
         log.debug("Recording sensitive data access: {} for subject {}", dataType, subjectId);
         ResqeatsSecurityContext context = SecurityContextHolder.getContext();
         log.info("{} | Event: SENSITIVE_DATA_ACCESS | User: {} | Role: {} | DataType: {} | SubjectId: {} | Reason: {} | Time: {}",
@@ -169,7 +168,7 @@ public class AuditService {
      * @param oldRole the previous role of the user
      * @param newRole the new role being assigned to the user
      */
-    public void logRoleChange(UUID targetUserId, String oldRole, String newRole) {
+    public void logRoleChange(Long targetUserId, String oldRole, String newRole) {
         ResqeatsSecurityContext context = SecurityContextHolder.getContext();
         log.debug("Recording role change for user {} by actor {}", targetUserId, context.getUserId());
         log.info("{} | Event: ROLE_CHANGE | Actor: {} | ActorRole: {} | TargetUser: {} | OldRole: {} | NewRole: {} | Time: {}",
@@ -187,7 +186,7 @@ public class AuditService {
      * @param userId the unique identifier of the user associated with the token
      * @param tokenId the unique identifier or fingerprint of the token
      */
-    public void logTokenEvent(String event, UUID userId, String tokenId) {
+    public void logTokenEvent(String event, Long userId, String tokenId) {
         log.debug("Recording token event: {} for user {}", event, userId);
         log.info("{} | Event: {} | UserId: {} | TokenId: {} | Time: {}",
                 AUDIT_PREFIX, event, userId, tokenId, LocalDateTime.now());

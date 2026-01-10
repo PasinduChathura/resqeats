@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 /**
  * Outlet list response DTO with merchant association for table display.
@@ -20,10 +19,10 @@ import java.util.UUID;
 @AllArgsConstructor
 public class OutletListResponseDto {
 
-    private UUID id;
+    private Long id;
 
     @JsonProperty("merchant_id")
-    private UUID merchantId;
+    private Long merchantId;
 
     private String name;
 

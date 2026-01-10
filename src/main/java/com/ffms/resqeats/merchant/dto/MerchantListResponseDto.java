@@ -9,7 +9,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 /**
  * Merchant list response DTO with essential fields for table display.
@@ -20,7 +19,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class MerchantListResponseDto {
 
-    private UUID id;
+    private Long id;
 
     private String name;
 
@@ -48,7 +47,7 @@ public class MerchantListResponseDto {
 
     // Additional fields for list display
     @JsonProperty("owner_user_id")
-    private UUID ownerUserId;
+    private Long ownerUserId;
 
     @JsonProperty("owner_name")
     private String ownerName;

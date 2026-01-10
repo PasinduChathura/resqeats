@@ -25,7 +25,6 @@ import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
 import java.security.Principal;
-import java.util.UUID;
 
 /**
  * WebSocket configuration with authentication and authorization.
@@ -149,7 +148,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
             String[] parts = destination.split("/");
             if (parts.length >= 3) {
                 String destUserId = parts[2];
-                UUID actualUserId = userDetails.getId();
+                Long actualUserId = userDetails.getId();
                 
                 // Allow if user ID matches or if user is admin
                 if (!destUserId.equals(actualUserId.toString()) && !hasAdminRole(userDetails)) {
@@ -169,7 +168,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 // Admin/SuperAdmin can subscribe to any outlet
                 if (!hasAdminRole(userDetails)) {
                     // Outlet users must be assigned to this outlet
-                    UUID assignedOutlet = userDetails.getOutletId();
+                    Long assignedOutlet = userDetails.getOutletId();
                     if (assignedOutlet == null || !assignedOutlet.toString().equals(outletIdStr)) {
                         log.warn("User {} attempted to subscribe to outlet {} but is assigned to {}", 
                                 userDetails.getId(), outletIdStr, assignedOutlet);

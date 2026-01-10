@@ -103,7 +103,7 @@ public class GeoService {
 
             log.debug("Processing outlet {} at distance {} km", outletId, distanceKm);
             
-            outletRepository.findById(UUID.fromString(outletId)).ifPresent(outlet -> {
+            outletRepository.findById(Long.valueOf(outletId)).ifPresent(outlet -> {
                 if (outlet.getStatus() == OutletStatus.ACTIVE) {
                     nearbyOutlets.add(NearbyOutlet.builder()
                             .outletId(outlet.getId())
@@ -163,7 +163,7 @@ public class GeoService {
      * @param outletId the unique identifier of the outlet
      * @return the distance in kilometers, or null if the outlet location cannot be determined
      */
-    public Double getDistanceToOutlet(double userLat, double userLng, UUID outletId) {
+    public Double getDistanceToOutlet(double userLat, double userLng, Long outletId) {
         log.info("Calculating distance to outlet {} from user location ({}, {})", outletId, userLat, userLng);
         
         log.debug("Attempting to retrieve outlet position from Redis geo index");
@@ -226,7 +226,7 @@ public class GeoService {
      *
      * @param outletId the unique identifier of the outlet to remove
      */
-    public void removeOutletFromGeoIndex(UUID outletId) {
+    public void removeOutletFromGeoIndex(Long outletId) {
         log.info("Removing outlet {} from geo index", outletId);
         
         log.debug("Executing Redis ZREM for outlet {}", outletId);
@@ -317,8 +317,8 @@ public class GeoService {
     @lombok.NoArgsConstructor
     @lombok.AllArgsConstructor
     public static class NearbyOutlet {
-        private UUID outletId;
-        private UUID merchantId;
+        private Long outletId;
+        private Long merchantId;
         private String name;
         private String address;
         private Double latitude;

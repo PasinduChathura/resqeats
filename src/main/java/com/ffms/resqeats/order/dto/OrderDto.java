@@ -10,7 +10,6 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * Order response DTO.
@@ -21,16 +20,16 @@ import java.util.UUID;
 @AllArgsConstructor
 public class OrderDto {
 
-    private UUID id;
+    private Long id;
 
     @JsonProperty("order_number")
     private String orderNumber;
 
     @JsonProperty("user_id")
-    private UUID userId;
+    private Long userId;
 
     @JsonProperty("outlet_id")
-    private UUID outletId;
+    private Long outletId;
 
     @JsonProperty("outlet_name")
     private String outletName;
@@ -74,7 +73,7 @@ public class OrderDto {
     @AllArgsConstructor
     public static class OrderItemDto {
         @JsonProperty("item_id")
-        private UUID itemId;
+        private Long itemId;
 
         @JsonProperty("item_name")
         private String itemName;

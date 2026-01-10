@@ -42,8 +42,8 @@ import java.util.UUID;
         @Index(name = "idx_order_outlet_status", columnList = "outlet_id, status")
 })
 @FilterDefs({
-    @FilterDef(name = "orderOutletFilter", parameters = @ParamDef(name = "outletId", type = String.class)),
-    @FilterDef(name = "orderUserFilter", parameters = @ParamDef(name = "userId", type = String.class))
+    @FilterDef(name = "orderOutletFilter", parameters = @ParamDef(name = "outletId", type = Long.class)),
+    @FilterDef(name = "orderUserFilter", parameters = @ParamDef(name = "userId", type = Long.class))
 })
 @Filters({
     @Filter(name = "orderOutletFilter", condition = "outlet_id = :outletId"),
@@ -76,12 +76,12 @@ public class Order extends BaseEntity {
     @NotNull
     @Column(name = "user_id", nullable = false)
     @JsonProperty("user_id")
-    private UUID userId;
+    private Long userId;
 
     @NotNull
     @Column(name = "outlet_id", nullable = false)
     @JsonProperty("outlet_id")
-    private UUID outletId;
+    private Long outletId;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 30, nullable = false)

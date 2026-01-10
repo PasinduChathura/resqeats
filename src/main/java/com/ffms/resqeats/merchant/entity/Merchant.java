@@ -13,7 +13,6 @@ import org.hibernate.annotations.FilterDef;
 import org.hibernate.annotations.ParamDef;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 /**
  * Merchant entity per SRS Section 7.2.
@@ -26,7 +25,7 @@ import java.util.UUID;
  */
 @Entity
 @Table(name = "merchants")
-@FilterDef(name = "merchantOwnerFilter", parameters = @ParamDef(name = "ownerUserId", type = String.class))
+@FilterDef(name = "merchantOwnerFilter", parameters = @ParamDef(name = "ownerUserId", type = Long.class))
 @Filter(name = "merchantOwnerFilter", condition = "owner_user_id = :ownerUserId")
 @Getter
 @Setter
@@ -86,7 +85,7 @@ public class Merchant extends BaseEntity {
 
     @Column(name = "approved_by")
     @JsonProperty("approved_by")
-    private UUID approvedBy;
+    private Long approvedBy;
 
     @Column(name = "rejected_at")
     @JsonProperty("rejected_at")
@@ -109,7 +108,7 @@ public class Merchant extends BaseEntity {
      */
     @Column(name = "owner_user_id", nullable = false)
     @JsonProperty("owner_user_id")
-    private UUID ownerUserId;
+    private Long ownerUserId;
 
     /**
      * Check if merchant is approved and can operate.

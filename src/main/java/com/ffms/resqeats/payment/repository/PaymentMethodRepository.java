@@ -8,7 +8,6 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * PaymentMethod repository.
@@ -23,18 +22,18 @@ public interface PaymentMethodRepository extends com.ffms.resqeats.common.reposi
         requireUserScope(entity.getUserId());
     }
 
-    List<PaymentMethod> findByUserIdAndIsActiveTrue(UUID userId);
+    List<PaymentMethod> findByUserIdAndIsActiveTrue(Long userId);
 
-    Optional<PaymentMethod> findByUserIdAndIsDefaultTrue(UUID userId);
+    Optional<PaymentMethod> findByUserIdAndIsDefaultTrue(Long userId);
 
     Optional<PaymentMethod> findByToken(String token);
 
     @Modifying
     @Query("UPDATE PaymentMethod pm SET pm.isDefault = false WHERE pm.userId = :userId")
-    void clearDefaultForUser(@Param("userId") UUID userId);
+    void clearDefaultForUser(@Param("userId") Long userId);
 
     @Query("SELECT COUNT(pm) FROM PaymentMethod pm WHERE pm.userId = :userId AND pm.isActive = true")
-    long countActiveByUserId(@Param("userId") UUID userId);
+    long countActiveByUserId(@Param("userId") Long userId);
 
-    boolean existsByUserIdAndToken(UUID userId, String token);
+    boolean existsByUserIdAndToken(Long userId, String token);
 }

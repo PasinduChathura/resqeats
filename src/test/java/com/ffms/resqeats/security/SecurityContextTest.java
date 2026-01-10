@@ -9,8 +9,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Nested;
 
-import java.util.UUID;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -37,13 +35,13 @@ class SecurityContextTest {
         @Test
         @DisplayName("Should create immutable context with all fields")
         void shouldCreateImmutableContext() {
-            UUID userId = UUID.randomUUID();
-            UUID merchantId = UUID.randomUUID();
-            UUID outletId = UUID.randomUUID();
+            Long userId = 1L;
+            Long merchantId = 2L;
+            Long outletId = 3L;
             
             ResqeatsSecurityContext context = ResqeatsSecurityContext.builder()
                     .userId(userId)
-                    .role(UserRole.MERCHANT)
+                    .role(UserRole.MERCHANT_USER)
                     .merchantId(merchantId)
                     .outletId(outletId)
                     .email("test@example.com")
@@ -55,7 +53,7 @@ class SecurityContextTest {
                     .build();
 
             assertEquals(userId, context.getUserId());
-            assertEquals(UserRole.MERCHANT, context.getRole());
+            assertEquals(UserRole.MERCHANT_USER, context.getRole());
             assertEquals(merchantId, context.getMerchantId());
             assertEquals(outletId, context.getOutletId());
             assertEquals("test@example.com", context.getEmail());
@@ -92,7 +90,7 @@ class SecurityContextTest {
         @DisplayName("SUPER_ADMIN should have highest authority")
         void superAdminShouldHaveHighestAuthority() {
             ResqeatsSecurityContext context = ResqeatsSecurityContext.builder()
-                    .userId(UUID.randomUUID())
+                    .userId(10L)
                     .role(UserRole.SUPER_ADMIN)
                     .anonymous(false)
                     .build();
@@ -109,7 +107,7 @@ class SecurityContextTest {
         @DisplayName("ADMIN should have authority over MERCHANT and below")
         void adminShouldHaveAuthorityOverMerchant() {
             ResqeatsSecurityContext context = ResqeatsSecurityContext.builder()
-                    .userId(UUID.randomUUID())
+                    .userId(11L)
                     .role(UserRole.ADMIN)
                     .anonymous(false)
                     .build();
@@ -126,9 +124,9 @@ class SecurityContextTest {
         @DisplayName("MERCHANT should have authority over OUTLET_USER and below")
         void merchantShouldHaveAuthorityOverOutletUser() {
             ResqeatsSecurityContext context = ResqeatsSecurityContext.builder()
-                    .userId(UUID.randomUUID())
-                    .role(UserRole.MERCHANT)
-                    .merchantId(UUID.randomUUID())
+                    .userId(12L)
+                    .role(UserRole.MERCHANT_USER)
+                    .merchantId(100L)
                     .anonymous(false)
                     .build();
 
@@ -144,8 +142,8 @@ class SecurityContextTest {
         @DisplayName("USER should have lowest authority")
         void userShouldHaveLowestAuthority() {
             ResqeatsSecurityContext context = ResqeatsSecurityContext.builder()
-                    .userId(UUID.randomUUID())
-                    .role(UserRole.USER)
+                    .userId(13L)
+                    .role(UserRole.CUSTOMER_USER)
                     .anonymous(false)
                     .build();
 
@@ -161,15 +159,15 @@ class SecurityContextTest {
         @DisplayName("hasRole should respect hierarchy")
         void hasRoleShouldRespectHierarchy() {
             ResqeatsSecurityContext adminContext = ResqeatsSecurityContext.builder()
-                    .userId(UUID.randomUUID())
+                    .userId(14L)
                     .role(UserRole.ADMIN)
                     .anonymous(false)
                     .build();
 
             assertTrue(adminContext.hasRole(UserRole.ADMIN));
-            assertTrue(adminContext.hasRole(UserRole.MERCHANT));
+            assertTrue(adminContext.hasRole(UserRole.MERCHANT_USER));
             assertTrue(adminContext.hasRole(UserRole.OUTLET_USER));
-            assertTrue(adminContext.hasRole(UserRole.USER));
+            assertTrue(adminContext.hasRole(UserRole.CUSTOMER_USER));
             assertFalse(adminContext.hasRole(UserRole.SUPER_ADMIN));
         }
     }
@@ -181,10 +179,10 @@ class SecurityContextTest {
         @Test
         @DisplayName("MERCHANT should have merchant scope")
         void merchantShouldHaveMerchantScope() {
-            UUID merchantId = UUID.randomUUID();
+            Long merchantId = 200L;
             ResqeatsSecurityContext context = ResqeatsSecurityContext.builder()
-                    .userId(UUID.randomUUID())
-                    .role(UserRole.MERCHANT)
+                .userId(20L)
+                    .role(UserRole.MERCHANT_USER)
                     .merchantId(merchantId)
                     .anonymous(false)
                     .build();
@@ -198,10 +196,10 @@ class SecurityContextTest {
         @Test
         @DisplayName("OUTLET_USER should have outlet scope")
         void outletUserShouldHaveOutletScope() {
-            UUID merchantId = UUID.randomUUID();
-            UUID outletId = UUID.randomUUID();
+            Long merchantId = 300L;
+            Long outletId = 301L;
             ResqeatsSecurityContext context = ResqeatsSecurityContext.builder()
-                    .userId(UUID.randomUUID())
+                .userId(21L)
                     .role(UserRole.OUTLET_USER)
                     .merchantId(merchantId)
                     .outletId(outletId)
@@ -218,7 +216,7 @@ class SecurityContextTest {
         @DisplayName("ADMIN should have no scope restrictions")
         void adminShouldHaveNoScopeRestrictions() {
             ResqeatsSecurityContext context = ResqeatsSecurityContext.builder()
-                    .userId(UUID.randomUUID())
+                    .userId(22L)
                     .role(UserRole.ADMIN)
                     .anonymous(false)
                     .build();
@@ -238,8 +236,8 @@ class SecurityContextTest {
         @DisplayName("Should set and get context")
         void shouldSetAndGetContext() {
             ResqeatsSecurityContext context = ResqeatsSecurityContext.builder()
-                    .userId(UUID.randomUUID())
-                    .role(UserRole.USER)
+                    .userId(30L)
+                    .role(UserRole.CUSTOMER_USER)
                     .anonymous(false)
                     .build();
 
@@ -255,8 +253,8 @@ class SecurityContextTest {
         @DisplayName("Should clear context")
         void shouldClearContext() {
             ResqeatsSecurityContext context = ResqeatsSecurityContext.builder()
-                    .userId(UUID.randomUUID())
-                    .role(UserRole.USER)
+                    .userId(31L)
+                    .role(UserRole.CUSTOMER_USER)
                     .anonymous(false)
                     .build();
 
@@ -278,8 +276,8 @@ class SecurityContextTest {
         @Test
         @DisplayName("Should provide convenience methods")
         void shouldProvideConvenienceMethods() {
-            UUID userId = UUID.randomUUID();
-            UUID merchantId = UUID.randomUUID();
+            Long userId = 40L;
+            Long merchantId = 401L;
             
             ResqeatsSecurityContext context = ResqeatsSecurityContext.builder()
                     .userId(userId)
@@ -296,7 +294,7 @@ class SecurityContextTest {
             assertEquals(merchantId, SecurityContextHolder.getCurrentMerchantId());
             assertTrue(SecurityContextHolder.isAuthenticated());
             assertTrue(SecurityContextHolder.isAdmin());
-            assertTrue(SecurityContextHolder.hasRole(UserRole.MERCHANT));
+            assertTrue(SecurityContextHolder.hasRole(UserRole.MERCHANT_USER));
             assertEquals("test-corr", SecurityContextHolder.getCorrelationId());
         }
     }

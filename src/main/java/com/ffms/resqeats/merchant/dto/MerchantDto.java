@@ -9,7 +9,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 /**
  * Merchant response DTO.
@@ -20,7 +19,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class MerchantDto {
 
-    private UUID id;
+    private Long id;
 
     private String name;
 

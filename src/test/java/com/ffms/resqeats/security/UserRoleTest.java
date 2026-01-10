@@ -35,32 +35,32 @@ class UserRoleTest {
         void adminShouldBeBetweenSuperAdminAndMerchant() {
             assertEquals(4, UserRole.ADMIN.getHierarchyLevel());
             assertTrue(UserRole.ADMIN.getHierarchyLevel() < UserRole.SUPER_ADMIN.getHierarchyLevel());
-            assertTrue(UserRole.ADMIN.getHierarchyLevel() > UserRole.MERCHANT.getHierarchyLevel());
+            assertTrue(UserRole.ADMIN.getHierarchyLevel() > UserRole.MERCHANT_USER.getHierarchyLevel());
         }
 
         @Test
         @DisplayName("MERCHANT should be between ADMIN and OUTLET_USER")
         void merchantShouldBeBetweenAdminAndOutletUser() {
-            assertEquals(3, UserRole.MERCHANT.getHierarchyLevel());
-            assertTrue(UserRole.MERCHANT.getHierarchyLevel() < UserRole.ADMIN.getHierarchyLevel());
-            assertTrue(UserRole.MERCHANT.getHierarchyLevel() > UserRole.OUTLET_USER.getHierarchyLevel());
+            assertEquals(3, UserRole.MERCHANT_USER.getHierarchyLevel());
+            assertTrue(UserRole.MERCHANT_USER.getHierarchyLevel() < UserRole.ADMIN.getHierarchyLevel());
+            assertTrue(UserRole.MERCHANT_USER.getHierarchyLevel() > UserRole.OUTLET_USER.getHierarchyLevel());
         }
 
         @Test
         @DisplayName("OUTLET_USER should be between MERCHANT and USER")
         void outletUserShouldBeBetweenMerchantAndUser() {
             assertEquals(2, UserRole.OUTLET_USER.getHierarchyLevel());
-            assertTrue(UserRole.OUTLET_USER.getHierarchyLevel() < UserRole.MERCHANT.getHierarchyLevel());
-            assertTrue(UserRole.OUTLET_USER.getHierarchyLevel() > UserRole.USER.getHierarchyLevel());
+            assertTrue(UserRole.OUTLET_USER.getHierarchyLevel() < UserRole.MERCHANT_USER.getHierarchyLevel());
+            assertTrue(UserRole.OUTLET_USER.getHierarchyLevel() > UserRole.CUSTOMER_USER.getHierarchyLevel());
         }
 
         @Test
         @DisplayName("USER should have lowest level")
         void userShouldHaveLowestLevel() {
-            assertEquals(1, UserRole.USER.getHierarchyLevel());
+            assertEquals(1, UserRole.CUSTOMER_USER.getHierarchyLevel());
             for (UserRole role : UserRole.values()) {
-                if (role != UserRole.USER) {
-                    assertTrue(UserRole.USER.getHierarchyLevel() < role.getHierarchyLevel(),
+                if (role != UserRole.CUSTOMER_USER) {
+                    assertTrue(UserRole.CUSTOMER_USER.getHierarchyLevel() < role.getHierarchyLevel(),
                             "USER should have lower level than " + role);
                 }
             }
@@ -77,26 +77,26 @@ class UserRoleTest {
             // SUPER_ADMIN has authority over all
             assertTrue(UserRole.SUPER_ADMIN.hasAuthorityOver(UserRole.SUPER_ADMIN));
             assertTrue(UserRole.SUPER_ADMIN.hasAuthorityOver(UserRole.ADMIN));
-            assertTrue(UserRole.SUPER_ADMIN.hasAuthorityOver(UserRole.MERCHANT));
+            assertTrue(UserRole.SUPER_ADMIN.hasAuthorityOver(UserRole.MERCHANT_USER));
             assertTrue(UserRole.SUPER_ADMIN.hasAuthorityOver(UserRole.OUTLET_USER));
-            assertTrue(UserRole.SUPER_ADMIN.hasAuthorityOver(UserRole.USER));
+            assertTrue(UserRole.SUPER_ADMIN.hasAuthorityOver(UserRole.CUSTOMER_USER));
 
             // ADMIN has authority over MERCHANT and below
             assertFalse(UserRole.ADMIN.hasAuthorityOver(UserRole.SUPER_ADMIN));
             assertTrue(UserRole.ADMIN.hasAuthorityOver(UserRole.ADMIN));
-            assertTrue(UserRole.ADMIN.hasAuthorityOver(UserRole.MERCHANT));
+            assertTrue(UserRole.ADMIN.hasAuthorityOver(UserRole.MERCHANT_USER));
             assertTrue(UserRole.ADMIN.hasAuthorityOver(UserRole.OUTLET_USER));
-            assertTrue(UserRole.ADMIN.hasAuthorityOver(UserRole.USER));
+            assertTrue(UserRole.ADMIN.hasAuthorityOver(UserRole.CUSTOMER_USER));
 
             // MERCHANT has authority over OUTLET_USER and below
-            assertFalse(UserRole.MERCHANT.hasAuthorityOver(UserRole.ADMIN));
-            assertTrue(UserRole.MERCHANT.hasAuthorityOver(UserRole.MERCHANT));
-            assertTrue(UserRole.MERCHANT.hasAuthorityOver(UserRole.OUTLET_USER));
-            assertTrue(UserRole.MERCHANT.hasAuthorityOver(UserRole.USER));
+            assertFalse(UserRole.MERCHANT_USER.hasAuthorityOver(UserRole.ADMIN));
+            assertTrue(UserRole.MERCHANT_USER.hasAuthorityOver(UserRole.MERCHANT_USER));
+            assertTrue(UserRole.MERCHANT_USER.hasAuthorityOver(UserRole.OUTLET_USER));
+            assertTrue(UserRole.MERCHANT_USER.hasAuthorityOver(UserRole.CUSTOMER_USER));
 
             // USER only has authority over itself
-            assertFalse(UserRole.USER.hasAuthorityOver(UserRole.OUTLET_USER));
-            assertTrue(UserRole.USER.hasAuthorityOver(UserRole.USER));
+            assertFalse(UserRole.CUSTOMER_USER.hasAuthorityOver(UserRole.OUTLET_USER));
+            assertTrue(UserRole.CUSTOMER_USER.hasAuthorityOver(UserRole.CUSTOMER_USER));
         }
 
         @Test
@@ -104,14 +104,14 @@ class UserRoleTest {
         void isAtLeastShouldWorkCorrectly() {
             // ADMIN is at least ADMIN
             assertTrue(UserRole.ADMIN.isAtLeast(UserRole.ADMIN));
-            assertTrue(UserRole.ADMIN.isAtLeast(UserRole.MERCHANT));
-            assertTrue(UserRole.ADMIN.isAtLeast(UserRole.USER));
+            assertTrue(UserRole.ADMIN.isAtLeast(UserRole.MERCHANT_USER));
+            assertTrue(UserRole.ADMIN.isAtLeast(UserRole.CUSTOMER_USER));
             assertFalse(UserRole.ADMIN.isAtLeast(UserRole.SUPER_ADMIN));
 
             // MERCHANT is at least MERCHANT
-            assertTrue(UserRole.MERCHANT.isAtLeast(UserRole.MERCHANT));
-            assertTrue(UserRole.MERCHANT.isAtLeast(UserRole.USER));
-            assertFalse(UserRole.MERCHANT.isAtLeast(UserRole.ADMIN));
+            assertTrue(UserRole.MERCHANT_USER.isAtLeast(UserRole.MERCHANT_USER));
+            assertTrue(UserRole.MERCHANT_USER.isAtLeast(UserRole.CUSTOMER_USER));
+            assertFalse(UserRole.MERCHANT_USER.isAtLeast(UserRole.ADMIN));
         }
     }
 
@@ -124,9 +124,9 @@ class UserRoleTest {
         void onlySuperAdminAndAdminShouldRequireAudit() {
             assertTrue(UserRole.SUPER_ADMIN.requiresAudit());
             assertTrue(UserRole.ADMIN.requiresAudit());
-            assertFalse(UserRole.MERCHANT.requiresAudit());
+            assertFalse(UserRole.MERCHANT_USER.requiresAudit());
             assertFalse(UserRole.OUTLET_USER.requiresAudit());
-            assertFalse(UserRole.USER.requiresAudit());
+            assertFalse(UserRole.CUSTOMER_USER.requiresAudit());
         }
     }
 
@@ -139,9 +139,9 @@ class UserRoleTest {
         void merchantAndOutletUserShouldHaveTenantScope() {
             assertFalse(UserRole.SUPER_ADMIN.hasTenantScope());
             assertFalse(UserRole.ADMIN.hasTenantScope());
-            assertTrue(UserRole.MERCHANT.hasTenantScope());
+            assertTrue(UserRole.MERCHANT_USER.hasTenantScope());
             assertTrue(UserRole.OUTLET_USER.hasTenantScope());
-            assertFalse(UserRole.USER.hasTenantScope());
+            assertFalse(UserRole.CUSTOMER_USER.hasTenantScope());
         }
 
         @Test
@@ -149,9 +149,9 @@ class UserRoleTest {
         void onlySuperAdminAndAdminShouldHaveGlobalAccess() {
             assertTrue(UserRole.SUPER_ADMIN.hasGlobalAccess());
             assertTrue(UserRole.ADMIN.hasGlobalAccess());
-            assertFalse(UserRole.MERCHANT.hasGlobalAccess());
+            assertFalse(UserRole.MERCHANT_USER.hasGlobalAccess());
             assertFalse(UserRole.OUTLET_USER.hasGlobalAccess());
-            assertFalse(UserRole.USER.hasGlobalAccess());
+            assertFalse(UserRole.CUSTOMER_USER.hasGlobalAccess());
         }
     }
 }

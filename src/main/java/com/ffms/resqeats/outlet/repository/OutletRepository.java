@@ -14,16 +14,15 @@ import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * Outlet repository per SRS Section 6.5.
  * 
  * TENANT SCOPED: 
  * - SUPER_ADMIN/ADMIN: Full access to all outlets
- * - MERCHANT: Access only to their merchant's outlets (Hibernate filter)
+ * - MERCHANT_USER: Access only to their merchant's outlets (Hibernate filter)
  * - OUTLET_USER: Access only to their assigned outlet
- * - USER: Read access to ACTIVE outlets only (public data)
+ * - CUSTOMER_USER: Read access to ACTIVE outlets only (public data)
  */
 @Repository
 public interface OutletRepository extends BaseScopedRepository<Outlet>, JpaSpecificationExecutor<Outlet> {
@@ -31,16 +30,16 @@ public interface OutletRepository extends BaseScopedRepository<Outlet>, JpaSpeci
     // ============== MERCHANT-SCOPED METHODS ==============
     // These are automatically filtered by merchantFilter for MERCHANT role
     
-    List<Outlet> findByMerchantId(UUID merchantId);
+    List<Outlet> findByMerchantId(Long merchantId);
 
-    Page<Outlet> findByMerchantId(UUID merchantId, Pageable pageable);
+    Page<Outlet> findByMerchantId(Long merchantId, Pageable pageable);
 
     @Query("SELECT o FROM Outlet o WHERE o.merchantId = :merchantId AND o.status = :status")
-    List<Outlet> findByMerchantIdAndStatus(@Param("merchantId") UUID merchantId, 
+    List<Outlet> findByMerchantIdAndStatus(@Param("merchantId") Long merchantId, 
                                             @Param("status") OutletStatus status);
 
     @Query("SELECT COUNT(o) FROM Outlet o WHERE o.merchantId = :merchantId AND o.status = 'ACTIVE'")
-    long countActiveOutletsByMerchantId(@Param("merchantId") UUID merchantId);
+    long countActiveOutletsByMerchantId(@Param("merchantId") Long merchantId);
 
     // ============== ADMIN-ONLY METHODS ==============
     // These should only be called by ADMIN/SUPER_ADMIN
@@ -86,7 +85,7 @@ public interface OutletRepository extends BaseScopedRepository<Outlet>, JpaSpeci
 
     /**
      * Get current user's accessible outlets based on role.
-     * - MERCHANT: All outlets for their merchant
+     * - MERCHANT_USER: All outlets for their merchant
      * - OUTLET_USER: Only their assigned outlet
      */
     default List<Outlet> findAccessibleOutlets() {
@@ -96,7 +95,7 @@ public interface OutletRepository extends BaseScopedRepository<Outlet>, JpaSpeci
             return findAll(); // ADMIN/SUPER_ADMIN see all
         }
         
-        if (context.getRole() == UserRole.MERCHANT && context.getMerchantId() != null) {
+        if (context.getRole() == UserRole.MERCHANT_USER && context.getMerchantId() != null) {
             return findByMerchantId(context.getMerchantId());
         }
         

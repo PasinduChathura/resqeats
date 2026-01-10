@@ -10,7 +10,6 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * OutletItem repository for managing item-outlet assignments.
@@ -27,52 +26,52 @@ public interface OutletItemRepository extends BaseScopedRepository<OutletItem> {
     // ============== OUTLET-SCOPED METHODS ==============
     // These are automatically filtered by outletFilter for OUTLET_USER role
     
-    List<OutletItem> findByOutletId(UUID outletId);
+    List<OutletItem> findByOutletId(Long outletId);
 
-    Optional<OutletItem> findByOutletIdAndItemId(UUID outletId, UUID itemId);
+    Optional<OutletItem> findByOutletIdAndItemId(Long outletId, Long itemId);
 
     @Query("SELECT oi FROM OutletItem oi WHERE oi.outletId = :outletId AND oi.isAvailable = true AND oi.currentQuantity > 0")
-    List<OutletItem> findAvailableByOutletId(@Param("outletId") UUID outletId);
+    List<OutletItem> findAvailableByOutletId(@Param("outletId") Long outletId);
 
     @Query("SELECT oi FROM OutletItem oi WHERE oi.outletId = :outletId AND oi.isAvailable = true")
-    List<OutletItem> findByOutletIdAndIsAvailableTrue(@Param("outletId") UUID outletId);
+    List<OutletItem> findByOutletIdAndIsAvailableTrue(@Param("outletId") Long outletId);
 
-    boolean existsByOutletIdAndItemId(UUID outletId, UUID itemId);
+    boolean existsByOutletIdAndItemId(Long outletId, Long itemId);
 
     // ============== ITEM-SCOPED METHODS ==============
     
-    List<OutletItem> findByItemId(UUID itemId);
+    List<OutletItem> findByItemId(Long itemId);
 
-    Optional<OutletItem> findFirstByItemIdAndIsAvailableTrue(UUID itemId);
+    Optional<OutletItem> findFirstByItemIdAndIsAvailableTrue(Long itemId);
 
     // ============== PUBLIC ACCESS METHODS ==============
     // For customer-facing features
     
     @Query("SELECT oi FROM OutletItem oi WHERE oi.outletId IN :outletIds AND oi.isAvailable = true AND oi.currentQuantity > 0")
-    List<OutletItem> findAvailableByOutletIds(@Param("outletIds") List<UUID> outletIds);
+    List<OutletItem> findAvailableByOutletIds(@Param("outletIds") List<Long> outletIds);
 
     // ============== MODIFYING OPERATIONS ==============
     // These require proper scope validation at service layer
     
     @Modifying
     @Query("UPDATE OutletItem oi SET oi.currentQuantity = oi.dailyQuantity WHERE oi.outletId = :outletId")
-    void resetDailyQuantities(@Param("outletId") UUID outletId);
+    void resetDailyQuantities(@Param("outletId") Long outletId);
 
     @Modifying
     @Query("UPDATE OutletItem oi SET oi.currentQuantity = oi.currentQuantity - :quantity WHERE oi.id = :id AND oi.currentQuantity >= :quantity")
-    int decrementQuantity(@Param("id") UUID id, @Param("quantity") int quantity);
+    int decrementQuantity(@Param("id") Long id, @Param("quantity") int quantity);
 
     @Modifying
     @Query("UPDATE OutletItem oi SET oi.currentQuantity = oi.currentQuantity + :quantity WHERE oi.id = :id")
-    int incrementQuantity(@Param("id") UUID id, @Param("quantity") int quantity);
+    int incrementQuantity(@Param("id") Long id, @Param("quantity") int quantity);
 
     @Modifying
     @Query("DELETE FROM OutletItem oi WHERE oi.outletId = :outletId")
-    void deleteByOutletId(@Param("outletId") UUID outletId);
+    void deleteByOutletId(@Param("outletId") Long outletId);
 
     @Modifying
     @Query("DELETE FROM OutletItem oi WHERE oi.itemId = :itemId")
-    void deleteByItemId(@Param("itemId") UUID itemId);
+    void deleteByItemId(@Param("itemId") Long itemId);
 
     // ============== SCOPED ACCESS METHODS ==============
 

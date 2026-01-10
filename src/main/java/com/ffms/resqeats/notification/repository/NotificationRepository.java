@@ -14,7 +14,6 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * Notification repository per SRS Section 6.12.
@@ -29,27 +28,27 @@ public interface NotificationRepository extends BaseScopedRepository<Notificatio
     // ============== USER-SCOPED METHODS ==============
     // These are automatically filtered by userFilter for all non-admin roles
     
-    Page<Notification> findByUserIdOrderByCreatedAtDesc(UUID userId, Pageable pageable);
+    Page<Notification> findByUserIdOrderByCreatedAtDesc(Long userId, Pageable pageable);
 
-    List<Notification> findByUserIdAndReadAtIsNullOrderByCreatedAtDesc(UUID userId);
+    List<Notification> findByUserIdAndReadAtIsNullOrderByCreatedAtDesc(Long userId);
 
     @Query("SELECT COUNT(n) FROM Notification n WHERE n.userId = :userId AND n.readAt IS NULL")
-    long countUnreadByUserId(@Param("userId") UUID userId);
+    long countUnreadByUserId(@Param("userId") Long userId);
 
     @Modifying
     @Query("UPDATE Notification n SET n.readAt = :now WHERE n.userId = :userId AND n.readAt IS NULL")
-    void markAllAsReadByUserId(@Param("userId") UUID userId, @Param("now") LocalDateTime now);
+    void markAllAsReadByUserId(@Param("userId") Long userId, @Param("now") LocalDateTime now);
 
     @Modifying
     @Query("UPDATE Notification n SET n.readAt = :now WHERE n.id = :id")
-    void markAsRead(@Param("id") UUID id, @Param("now") LocalDateTime now);
+    void markAsRead(@Param("id") Long id, @Param("now") LocalDateTime now);
 
     // ============== SYSTEM/ADMIN METHODS ==============
     // These are for system operations (notification delivery)
     
     List<Notification> findByStatusAndCreatedAtBefore(NotificationStatus status, LocalDateTime before);
 
-    List<Notification> findByOrderId(UUID orderId);
+    List<Notification> findByOrderId(Long orderId);
 
     List<Notification> findByTypeAndStatusOrderByCreatedAtAsc(NotificationType type, NotificationStatus status);
 

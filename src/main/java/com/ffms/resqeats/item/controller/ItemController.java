@@ -28,7 +28,6 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * Item controller per SRS Section 6.2.
@@ -65,7 +64,7 @@ public class ItemController {
 
     @GetMapping("/outlets/{outletId}/items")
     @Operation(summary = "Get outlet items (customer view)")
-    public ResponseEntity<ApiResponse<List<OutletItemDto>>> getOutletItems(@PathVariable UUID outletId) {
+    public ResponseEntity<ApiResponse<List<OutletItemDto>>> getOutletItems(@PathVariable Long outletId) {
         log.info("Get outlet items request for outletId: {}", outletId);
         try {
             List<OutletItemDto> items = itemService.getAvailableOutletItems(outletId);
@@ -95,7 +94,7 @@ public class ItemController {
 
     @GetMapping("/items/{id}")
     @Operation(summary = "Get item details")
-    public ResponseEntity<ApiResponse<ItemDto>> getItem(@PathVariable UUID id) {
+    public ResponseEntity<ApiResponse<ItemDto>> getItem(@PathVariable Long id) {
         log.info("Get item details request for itemId: {}", id);
         try {
             ItemDto item = itemService.getItem(id);
@@ -113,10 +112,10 @@ public class ItemController {
 
     @PostMapping("/merchants/{merchantId}/items")
     @Operation(summary = "Create item")
-    @PreAuthorize("hasRole('MERCHANT')")
+    @PreAuthorize("hasRole('MERCHANT_USER')")
     public ResponseEntity<ApiResponse<ItemDto>> createItem(
             @CurrentUser UserPrincipal currentUser,
-            @PathVariable UUID merchantId,
+            @PathVariable Long merchantId,
             @Valid @RequestBody CreateItemRequest request) {
         log.info("Create item request for merchantId: {} - Name: {}", merchantId, request.getName());
         try {
@@ -131,9 +130,9 @@ public class ItemController {
 
     @GetMapping("/merchants/{merchantId}/items")
     @Operation(summary = "List merchant items")
-    @PreAuthorize("hasRole('MERCHANT')")
+    @PreAuthorize("hasRole('MERCHANT_USER')")
     public ResponseEntity<ApiResponse<PageResponse<ItemDto>>> getMerchantItems(
-            @PathVariable UUID merchantId,
+            @PathVariable Long merchantId,
             Pageable pageable) {
         log.info("List items request for merchantId: {}, page: {}", merchantId, pageable.getPageNumber());
         try {
@@ -148,10 +147,10 @@ public class ItemController {
 
     @PutMapping("/items/{id}")
     @Operation(summary = "Update item")
-    @PreAuthorize("hasRole('MERCHANT')")
+    @PreAuthorize("hasRole('MERCHANT_USER')")
     public ResponseEntity<ApiResponse<ItemDto>> updateItem(
             @CurrentUser UserPrincipal currentUser,
-            @PathVariable UUID id,
+            @PathVariable Long id,
             @Valid @RequestBody UpdateItemRequest request) {
         log.info("Update item request for itemId: {} by userId: {}", id, currentUser.getId());
         try {
@@ -170,10 +169,10 @@ public class ItemController {
 
     @PostMapping("/outlets/{outletId}/items")
     @Operation(summary = "Add item to outlet")
-    @PreAuthorize("hasAnyRole('MERCHANT', 'OUTLET_USER')")
+    @PreAuthorize("hasAnyRole('MERCHANT_USER', 'OUTLET_USER')")
     public ResponseEntity<ApiResponse<OutletItemDto>> addItemToOutlet(
             @CurrentUser UserPrincipal currentUser,
-            @PathVariable UUID outletId,
+            @PathVariable Long outletId,
             @Valid @RequestBody AddItemToOutletRequest request) {
         log.info("Add item to outlet request - outletId: {}, itemId: {}", outletId, request.getItemId());
         try {
@@ -193,11 +192,11 @@ public class ItemController {
 
     @PutMapping("/outlets/{outletId}/items/{outletItemId}")
     @Operation(summary = "Update outlet item")
-    @PreAuthorize("hasAnyRole('MERCHANT', 'OUTLET_USER')")
+    @PreAuthorize("hasAnyRole('MERCHANT_USER', 'OUTLET_USER')")
     public ResponseEntity<ApiResponse<OutletItemDto>> updateOutletItem(
             @CurrentUser UserPrincipal currentUser,
-            @PathVariable UUID outletId,
-            @PathVariable UUID outletItemId,
+            @PathVariable Long outletId,
+            @PathVariable Long outletItemId,
             @Valid @RequestBody UpdateOutletItemRequest request) {
         log.info("Update outlet item request - outletId: {}, outletItemId: {}", outletId, outletItemId);
         try {
@@ -216,11 +215,11 @@ public class ItemController {
 
     @DeleteMapping("/outlets/{outletId}/items/{outletItemId}")
     @Operation(summary = "Remove item from outlet")
-    @PreAuthorize("hasAnyRole('MERCHANT', 'OUTLET_USER')")
+    @PreAuthorize("hasAnyRole('MERCHANT_USER', 'OUTLET_USER')")
     public ResponseEntity<ApiResponse<Void>> removeItemFromOutlet(
             @CurrentUser UserPrincipal currentUser,
-            @PathVariable UUID outletId,
-            @PathVariable UUID outletItemId) {
+            @PathVariable Long outletId,
+            @PathVariable Long outletItemId) {
         log.info("Remove item from outlet request - outletId: {}, outletItemId: {}", outletId, outletItemId);
         try {
             itemService.removeItemFromOutlet(outletItemId, currentUser.getId());
@@ -259,7 +258,7 @@ public class ItemController {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class AddItemToOutletRequest {
-        private UUID itemId;
+        private Long itemId;
         private Integer quantity;
         private LocalDateTime pickupStartTime;
         private LocalDateTime pickupEndTime;

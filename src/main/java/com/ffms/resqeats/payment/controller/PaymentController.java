@@ -16,7 +16,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.UUID;
 
 /**
  * Payment controller per SRS Section 6.2.
@@ -33,7 +32,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Payments", description = "Payment management APIs")
-@PreAuthorize("hasRole('USER')")
+@PreAuthorize("hasRole('CUSTOMER_USER')")
 public class PaymentController {
 
     private final PaymentService paymentService;
@@ -73,7 +72,7 @@ public class PaymentController {
     @Operation(summary = "Remove payment method")
     public ResponseEntity<ApiResponse<Void>> removePaymentMethod(
             @CurrentUser UserPrincipal currentUser,
-            @PathVariable UUID id) {
+            @PathVariable Long id) {
         log.info("Remove payment method request for userId: {} - methodId: {}", currentUser.getId(), id);
         try {
             paymentService.removePaymentMethod(id, currentUser.getId());
@@ -89,7 +88,7 @@ public class PaymentController {
     @Operation(summary = "Set default payment method")
     public ResponseEntity<ApiResponse<Void>> setDefaultPaymentMethod(
             @CurrentUser UserPrincipal currentUser,
-            @PathVariable UUID id) {
+            @PathVariable Long id) {
         log.info("Set default payment method request for userId: {} - methodId: {}", currentUser.getId(), id);
         try {
             paymentService.setDefaultPaymentMethod(id, currentUser.getId());
@@ -104,7 +103,7 @@ public class PaymentController {
     @GetMapping("/{orderId}")
     @Operation(summary = "Get payment for order")
     public ResponseEntity<ApiResponse<Payment>> getPayment(
-            @PathVariable UUID orderId) {
+            @PathVariable Long orderId) {
         log.info("Get payment request for orderId: {}", orderId);
         try {
             Payment payment = paymentService.getPaymentByOrderId(orderId);

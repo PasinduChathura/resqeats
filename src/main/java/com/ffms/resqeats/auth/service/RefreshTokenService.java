@@ -47,7 +47,7 @@ public class RefreshTokenService {
      * @return the created refresh token entity
      */
     @Transactional
-    public RefreshToken createRefreshTokenForUser(UUID userId) {
+    public RefreshToken createRefreshTokenForUser(Long userId) {
         log.info("Creating refresh token for user: {}", userId);
         return createRefreshTokenForUser(userId, false, null);
     }
@@ -61,7 +61,7 @@ public class RefreshTokenService {
      * @return the created refresh token entity
      */
     @Transactional
-    public RefreshToken createRefreshTokenForUser(UUID userId, boolean isMobile, String deviceInfo) {
+    public RefreshToken createRefreshTokenForUser(Long userId, boolean isMobile, String deviceInfo) {
         log.info("Creating refresh token for user: {}, mobile: {}, device: {}", userId, isMobile, deviceInfo);
         
         int expiryDays = isMobile ? mobileRefreshTokenExpiryDays : refreshTokenExpiryDays;
@@ -139,7 +139,7 @@ public class RefreshTokenService {
      * @param userId the user ID to revoke all tokens for
      */
     @Transactional
-    public void revokeAllUserTokens(UUID userId) {
+    public void revokeAllUserTokens(Long userId) {
         log.info("Revoking all refresh tokens for user: {}", userId);
         refreshTokenRepository.revokeAllByUserId(userId, LocalDateTime.now());
         log.info("All refresh tokens revoked successfully for user: {}", userId);
@@ -152,7 +152,7 @@ public class RefreshTokenService {
      * @return the number of active sessions
      */
     @Transactional(readOnly = true)
-    public long countActiveSessions(UUID userId) {
+    public long countActiveSessions(Long userId) {
         log.debug("Counting active sessions for user: {}", userId);
         long count = refreshTokenRepository.countActiveSessionsByUserId(userId, LocalDateTime.now());
         log.debug("Active session count for user: {} is {}", userId, count);

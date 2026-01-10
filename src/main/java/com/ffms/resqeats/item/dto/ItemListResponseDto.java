@@ -11,7 +11,6 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 /**
  * Item list response DTO with essential fields for table display.
@@ -22,10 +21,10 @@ import java.util.UUID;
 @AllArgsConstructor
 public class ItemListResponseDto {
 
-    private UUID id;
+    private Long id;
 
     @JsonProperty("merchant_id")
-    private UUID merchantId;
+    private Long merchantId;
 
     private String name;
 

@@ -4,8 +4,6 @@ import com.ffms.resqeats.user.enums.UserRole;
 import lombok.Builder;
 import lombok.Getter;
 
-import java.util.UUID;
-
 /**
  * Immutable security context for the current request.
  * Populated once at request entry, cleared after request completion.
@@ -20,7 +18,7 @@ public final class ResqeatsSecurityContext {
     /**
      * Unique identifier for the authenticated user.
      */
-    private final UUID userId;
+    private final Long userId;
 
     /**
      * User's role for RBAC enforcement.
@@ -30,12 +28,12 @@ public final class ResqeatsSecurityContext {
     /**
      * Merchant ID for tenant scoping (nullable for ADMIN/SUPER_ADMIN/USER).
      */
-    private final UUID merchantId;
+    private final Long merchantId;
 
     /**
      * Outlet ID for tenant scoping (nullable for non-OUTLET_USER).
      */
-    private final UUID outletId;
+    private final Long outletId;
 
     /**
      * User's email for audit logging.
@@ -84,10 +82,10 @@ public final class ResqeatsSecurityContext {
     }
 
     /**
-     * Check if user is MERCHANT or higher.
+     * Check if user is MERCHANT_USER or higher.
      */
     public boolean isMerchant() {
-        return role != null && role.isAtLeast(UserRole.MERCHANT);
+        return role != null && role.isAtLeast(UserRole.MERCHANT_USER);
     }
 
     /**
@@ -124,7 +122,7 @@ public final class ResqeatsSecurityContext {
      * Check if user has merchant-level scope restriction.
      */
     public boolean hasMerchantScope() {
-        return role == UserRole.MERCHANT && merchantId != null;
+        return role == UserRole.MERCHANT_USER && merchantId != null;
     }
 
     /**
@@ -138,7 +136,7 @@ public final class ResqeatsSecurityContext {
      * Get the effective merchant ID for filtering.
      * Returns null for users with global access.
      */
-    public UUID getEffectiveMerchantId() {
+    public Long getEffectiveMerchantId() {
         if (hasGlobalAccess()) {
             return null; // No filtering for SUPER_ADMIN/ADMIN
         }
@@ -149,8 +147,8 @@ public final class ResqeatsSecurityContext {
      * Get the effective outlet ID for filtering.
      * Returns null for users not restricted to a specific outlet.
      */
-    public UUID getEffectiveOutletId() {
-        if (hasGlobalAccess() || role == UserRole.MERCHANT) {
+    public Long getEffectiveOutletId() {
+        if (hasGlobalAccess() || role == UserRole.MERCHANT_USER) {
             return null; // No outlet filtering
         }
         return outletId;

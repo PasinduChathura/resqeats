@@ -8,8 +8,6 @@ import com.ffms.resqeats.user.enums.UserRole;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.util.UUID;
-
 /**
  * Centralized RBAC (Role-Based Access Control) Policy Engine.
  * 
@@ -17,9 +15,9 @@ import java.util.UUID;
  * No duplicate security logic allowed in controllers or services.
  * 
  * Rules:
- * - USER → blocked from internal APIs
+ * - CUSTOMER_USER → blocked from internal APIs
  * - OUTLET_USER → outlet-only access
- * - MERCHANT → merchant-only access
+ * - MERCHANT_USER → merchant-only access
  * - ADMIN → global access (audited)
  * - SUPER_ADMIN → unrestricted (audited)
  */
@@ -72,10 +70,10 @@ public class RbacPolicyEngine {
     }
 
     /**
-     * Require MERCHANT or higher role.
+     * Require MERCHANT_USER or higher role.
      */
     public void requireMerchant() {
-        requireRole(UserRole.MERCHANT);
+        requireRole(UserRole.MERCHANT_USER);
     }
 
     /**
@@ -90,11 +88,11 @@ public class RbacPolicyEngine {
     /**
      * Require access to the specified merchant.
      * - SUPER_ADMIN/ADMIN: always allowed
-     * - MERCHANT: must match their merchantId
+    * - MERCHANT_USER: must match their merchantId
      * - OUTLET_USER: must match their merchant (via outlet)
-     * - USER: denied
+    * - CUSTOMER_USER: denied
      */
-    public void requireMerchantAccess(UUID merchantId) {
+    public void requireMerchantAccess(Long merchantId) {
         requireAuthenticated();
         
         if (merchantId == null) {
@@ -109,8 +107,8 @@ public class RbacPolicyEngine {
             return;
         }
         
-        // MERCHANT must match their own merchant
-        if (context.getRole() == UserRole.MERCHANT) {
+        // MERCHANT_USER must match their own merchant
+        if (context.getRole() == UserRole.MERCHANT_USER) {
             if (!merchantId.equals(context.getMerchantId())) {
                 log.warn("Access denied: Merchant {} attempted to access merchant {}",
                         context.getMerchantId(), merchantId);
@@ -130,7 +128,7 @@ public class RbacPolicyEngine {
             return;
         }
         
-        // USER role - denied
+        // CUSTOMER_USER role - denied
         log.warn("Access denied: User {} attempted to access merchant APIs", context.getUserId());
         throw new AccessDeniedException("Merchant access denied for regular users");
     }
@@ -138,11 +136,11 @@ public class RbacPolicyEngine {
     /**
      * Require access to the specified outlet.
      * - SUPER_ADMIN/ADMIN: always allowed
-     * - MERCHANT: must own the outlet (via merchantId)
+    * - MERCHANT_USER: must own the outlet (via merchantId)
      * - OUTLET_USER: must be assigned to the outlet
-     * - USER: denied
+    * - CUSTOMER_USER: denied
      */
-    public void requireOutletAccess(UUID outletId, UUID outletMerchantId) {
+    public void requireOutletAccess(Long outletId, Long outletMerchantId) {
         requireAuthenticated();
         
         if (outletId == null) {
@@ -157,8 +155,8 @@ public class RbacPolicyEngine {
             return;
         }
         
-        // MERCHANT must own the outlet
-        if (context.getRole() == UserRole.MERCHANT) {
+        // MERCHANT_USER must own the outlet
+        if (context.getRole() == UserRole.MERCHANT_USER) {
             if (!context.getMerchantId().equals(outletMerchantId)) {
                 log.warn("Access denied: Merchant {} attempted to access outlet {} owned by {}",
                         context.getMerchantId(), outletId, outletMerchantId);
@@ -177,7 +175,7 @@ public class RbacPolicyEngine {
             return;
         }
         
-        // USER role - denied
+        // CUSTOMER_USER role - denied
         log.warn("Access denied: User {} attempted to access outlet APIs", context.getUserId());
         throw new AccessDeniedException("Outlet access denied for regular users");
     }
@@ -187,7 +185,7 @@ public class RbacPolicyEngine {
      * - SUPER_ADMIN/ADMIN: always allowed
      * - Others: can only access their own data
      */
-    public void requireUserAccess(UUID targetUserId) {
+    public void requireUserAccess(Long targetUserId) {
         requireAuthenticated();
         
         if (targetUserId == null) {
@@ -213,7 +211,7 @@ public class RbacPolicyEngine {
     /**
      * Check if current user owns the specified resource.
      */
-    public boolean isResourceOwner(UUID resourceOwnerId) {
+    public boolean isResourceOwner(Long resourceOwnerId) {
         if (resourceOwnerId == null) {
             return false;
         }
@@ -223,7 +221,7 @@ public class RbacPolicyEngine {
     /**
      * Check if current user can access the specified merchant.
      */
-    public boolean canAccessMerchant(UUID merchantId) {
+    public boolean canAccessMerchant(Long merchantId) {
         if (merchantId == null) {
             return false;
         }
@@ -240,7 +238,7 @@ public class RbacPolicyEngine {
     /**
      * Check if current user can access the specified outlet.
      */
-    public boolean canAccessOutlet(UUID outletId) {
+    public boolean canAccessOutlet(Long outletId) {
         if (outletId == null) {
             return false;
         }
@@ -251,7 +249,7 @@ public class RbacPolicyEngine {
             return true;
         }
         
-        if (context.getRole() == UserRole.MERCHANT) {
+        if (context.getRole() == UserRole.MERCHANT_USER) {
             // Merchant can access any of their outlets (checked via merchant_id filter)
             return true;
         }
@@ -261,7 +259,7 @@ public class RbacPolicyEngine {
 
     // ========== Audit Logging ==========
 
-    private void auditAdminAccess(ResqeatsSecurityContext context, String resourceType, UUID resourceId) {
+    private void auditAdminAccess(ResqeatsSecurityContext context, String resourceType, Long resourceId) {
         if (context.requiresAudit()) {
             log.info("AUDIT: {} {} accessed {} {}",
                     context.getRole(), context.getUserId(), resourceType, resourceId);

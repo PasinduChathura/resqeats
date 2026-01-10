@@ -11,7 +11,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.UUID;
 
 /**
  * User principal for Spring Security.
@@ -22,13 +21,13 @@ import java.util.UUID;
 @AllArgsConstructor
 public class UserPrincipal implements UserDetails {
 
-    private UUID id;
+    private Long id;
     private String email;
     private String phone;
     private String password;
     private UserRole role;
-    private UUID merchantId;
-    private UUID outletId;
+    private Long merchantId;
+    private Long outletId;
     private boolean enabled;
     private boolean accountNonLocked;
 

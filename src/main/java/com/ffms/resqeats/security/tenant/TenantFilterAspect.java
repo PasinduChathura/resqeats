@@ -13,8 +13,6 @@ import org.hibernate.Filter;
 import org.hibernate.Session;
 import org.springframework.stereotype.Component;
 
-import java.util.UUID;
-
 /**
  * Hibernate Filter Configuration for Multi-Tenant Scope Enforcement.
  * 
@@ -24,9 +22,9 @@ import java.util.UUID;
  * Filter Rules:
  * - SUPER_ADMIN → No filter applied
  * - ADMIN → No filter applied (audited)
- * - MERCHANT → merchant_id filter enabled for outlets, items, orders; owner filter for merchants
+ * - MERCHANT_USER → merchant_id filter enabled for outlets, items, orders; owner filter for merchants
  * - OUTLET_USER → outlet_id filter enabled (and merchant_id)
- * - USER → user_id filter for owned resources (orders, notifications)
+ * - CUSTOMER_USER → user_id filter for owned resources (orders, notifications)
  * 
  * ALL database queries are automatically filtered at the persistence layer.
  * This is the PRIMARY enforcement mechanism for tenant isolation.
@@ -102,24 +100,24 @@ public class TenantFilterAspect {
         }
 
         UserRole role = context.getRole();
-        UUID userId = context.getUserId();
+        Long userId = context.getUserId();
         
-        // MERCHANT - filter by merchant_id for outlets/items, owner for merchants
-        if (role == UserRole.MERCHANT && context.getMerchantId() != null) {
-            UUID merchantId = context.getMerchantId();
+        // MERCHANT_USER - filter by merchant_id for outlets/items, owner for merchants
+        if (role == UserRole.MERCHANT_USER && context.getMerchantId() != null) {
+            Long merchantId = context.getMerchantId();
             
             // Outlet filter - see only merchant's outlets
-            enableFilter(session, OUTLET_MERCHANT_FILTER, "merchantId", merchantId.toString());
+            enableFilter(session, OUTLET_MERCHANT_FILTER, "merchantId", merchantId);
             
             // Item filter - see only merchant's items
-            enableFilter(session, ITEM_MERCHANT_FILTER, "merchantId", merchantId.toString());
+            enableFilter(session, ITEM_MERCHANT_FILTER, "merchantId", merchantId);
             
             // User filter - see only users within merchant
-            enableFilter(session, USER_MERCHANT_FILTER, "merchantId", merchantId.toString());
+            enableFilter(session, USER_MERCHANT_FILTER, "merchantId", merchantId);
             
             // Merchant filter - see only owned merchant
             if (userId != null) {
-                enableFilter(session, MERCHANT_OWNER_FILTER, "ownerUserId", userId.toString());
+                enableFilter(session, MERCHANT_OWNER_FILTER, "ownerUserId", userId);
             }
             
             log.trace("Merchant filters enabled. MerchantId: {}, UserId: {}", merchantId, userId);
@@ -127,43 +125,43 @@ public class TenantFilterAspect {
 
         // OUTLET_USER - filter by outlet_id
         if (role == UserRole.OUTLET_USER && context.hasOutletScope()) {
-            UUID outletId = context.getOutletId();
-            UUID merchantId = context.getMerchantId();
+            Long outletId = context.getOutletId();
+            Long merchantId = context.getMerchantId();
             
             // Order filter - see only outlet's orders
-            enableFilter(session, ORDER_OUTLET_FILTER, "outletId", outletId.toString());
+            enableFilter(session, ORDER_OUTLET_FILTER, "outletId", outletId);
             
             // OutletItem filter - see only outlet's items
-            enableFilter(session, OUTLET_ITEM_OUTLET_FILTER, "outletId", outletId.toString());
+            enableFilter(session, OUTLET_ITEM_OUTLET_FILTER, "outletId", outletId);
             
             // OutletHours filter - see only outlet's hours
-            enableFilter(session, OUTLET_HOURS_OUTLET_FILTER, "outletId", outletId.toString());
+            enableFilter(session, OUTLET_HOURS_OUTLET_FILTER, "outletId", outletId);
             
             // User filter - see only users within outlet
-            enableFilter(session, USER_OUTLET_FILTER, "outletId", outletId.toString());
+            enableFilter(session, USER_OUTLET_FILTER, "outletId", outletId);
             
             // Also apply merchant filter for outlets/items if merchant context exists
             if (merchantId != null) {
-                enableFilter(session, OUTLET_MERCHANT_FILTER, "merchantId", merchantId.toString());
-                enableFilter(session, ITEM_MERCHANT_FILTER, "merchantId", merchantId.toString());
+                enableFilter(session, OUTLET_MERCHANT_FILTER, "merchantId", merchantId);
+                enableFilter(session, ITEM_MERCHANT_FILTER, "merchantId", merchantId);
             }
             
             log.trace("Outlet filters enabled. OutletId: {}", outletId);
         }
 
-        // USER (regular customer) - filter by user_id for owned resources
-        if (role == UserRole.USER && userId != null) {
+        // CUSTOMER_USER (regular customer) - filter by user_id for owned resources
+        if (role == UserRole.CUSTOMER_USER && userId != null) {
             // Order filter - see only own orders
-            enableFilter(session, ORDER_USER_FILTER, "userId", userId.toString());
+            enableFilter(session, ORDER_USER_FILTER, "userId", userId);
             
             // Notification filter - see only own notifications
-            enableFilter(session, NOTIFICATION_USER_FILTER, "userId", userId.toString());
+            enableFilter(session, NOTIFICATION_USER_FILTER, "userId", userId);
             
             // PaymentMethod filter - see only own payment methods
-            enableFilter(session, PAYMENT_METHOD_USER_FILTER, "userId", userId.toString());
+            enableFilter(session, PAYMENT_METHOD_USER_FILTER, "userId", userId);
             
             // RefreshToken filter - see only own tokens
-            enableFilter(session, REFRESH_TOKEN_USER_FILTER, "userId", userId.toString());
+            enableFilter(session, REFRESH_TOKEN_USER_FILTER, "userId", userId);
             
             log.trace("User filters enabled. UserId: {}", userId);
         }
@@ -172,7 +170,7 @@ public class TenantFilterAspect {
     /**
      * Helper to enable a filter with parameter.
      */
-    private void enableFilter(Session session, String filterName, String paramName, String paramValue) {
+    private void enableFilter(Session session, String filterName, String paramName, Object paramValue) {
         try {
             Filter filter = session.enableFilter(filterName);
             filter.setParameter(paramName, paramValue);

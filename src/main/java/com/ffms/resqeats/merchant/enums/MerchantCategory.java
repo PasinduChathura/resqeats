@@ -6,6 +6,7 @@ package com.ffms.resqeats.merchant.enums;
 public enum MerchantCategory {
     BAKERY,
     RESTAURANT,
+    HOTEL,
     GROCERY,
     PRODUCE,
     CAFE,

@@ -9,7 +9,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 /**
  * Filter DTO for user list queries.
@@ -32,10 +31,10 @@ public class UserFilterDto {
     private String search;
 
     @Schema(description = "Filter by associated merchant ID")
-    private UUID merchantId;
+    private Long merchantId;
 
     @Schema(description = "Filter by associated outlet ID")
-    private UUID outletId;
+    private Long outletId;
 
     @Schema(description = "Filter users created after this date")
     private LocalDateTime dateFrom;

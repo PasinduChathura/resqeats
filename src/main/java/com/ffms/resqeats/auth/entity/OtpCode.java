@@ -7,7 +7,6 @@ import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 /**
  * OTP entity per SRS Section 4.1 (FR-M-001, FR-M-002).
@@ -69,7 +68,7 @@ public class OtpCode extends BaseEntity {
      */
     @Column(name = "user_id")
     @JsonProperty("user_id")
-    private UUID userId;
+    private Long userId;
 
     /**
      * Check if OTP is expired (5 minutes per SRS).

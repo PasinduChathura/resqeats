@@ -9,7 +9,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 /**
  * User response DTO.
@@ -20,7 +19,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class UserDto {
 
-    private UUID id;
+    private Long id;
 
     private String email;
 
@@ -46,10 +45,10 @@ public class UserDto {
     private Boolean phoneVerified;
 
     @JsonProperty("merchant_id")
-    private UUID merchantId;
+    private Long merchantId;
 
     @JsonProperty("outlet_id")
-    private UUID outletId;
+    private Long outletId;
 
     @JsonProperty("created_at")
     private LocalDateTime createdAt;

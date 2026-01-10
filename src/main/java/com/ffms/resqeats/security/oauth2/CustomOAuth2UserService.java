@@ -143,7 +143,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                     .profileImageUrl(userInfo.getImageUrl())
                     .oauth2Provider("GOOGLE")
                     .oauth2ProviderId(userInfo.getId())
-                    .role(UserRole.USER)
+                    .role(UserRole.CUSTOMER_USER)
                     .status(UserStatus.ACTIVE)
                     .emailVerified(true)
                     .build();

@@ -4,12 +4,10 @@ import com.ffms.resqeats.payment.enums.PaymentMethodType;
 import lombok.Builder;
 import lombok.Data;
 
-import java.util.UUID;
-
 @Data
 @Builder
 public class PaymentMethodResponse {
-    private UUID id;
+    private Long id;
     private PaymentMethodType paymentMethodType;
     private String cardLastFour;
     private String cardBrand;

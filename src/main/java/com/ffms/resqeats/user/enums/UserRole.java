@@ -4,7 +4,7 @@ package com.ffms.resqeats.user.enums;
  * User roles per SRS Section 3.
  * Strict RBAC enforcement with hierarchical permissions.
  * 
- * Hierarchy: SUPER_ADMIN > ADMIN > MERCHANT > OUTLET_USER > USER
+ * Hierarchy: SUPER_ADMIN > ADMIN > MERCHANT_USER > OUTLET_USER > CUSTOMER_USER
  */
 public enum UserRole {
     /**
@@ -26,7 +26,7 @@ public enum UserRole {
      * Can create outlets, items, and outlet users.
      * Access limited to own merchant's data only.
      */
-    MERCHANT(3),
+    MERCHANT_USER(3),
 
     /**
      * Outlet staff member assigned to a specific outlet.
@@ -39,7 +39,7 @@ public enum UserRole {
      * End customer (mobile app user).
      * Can browse, order, pay, and pickup Secret Boxes.
      */
-    USER(1);
+    CUSTOMER_USER(1);
 
     private final int hierarchyLevel;
 
@@ -76,7 +76,7 @@ public enum UserRole {
      * Check if this role has tenant scope restrictions.
      */
     public boolean hasTenantScope() {
-        return this == MERCHANT || this == OUTLET_USER;
+        return this == MERCHANT_USER || this == OUTLET_USER;
     }
 
     /**

@@ -19,8 +19,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.UUID;
-
 /**
  * Notification controller per SRS Section 6.2.
  *
@@ -78,7 +76,7 @@ public class NotificationController {
     @Operation(summary = "Mark notification as read")
     public ResponseEntity<ApiResponse<Void>> markAsRead(
             @CurrentUser UserPrincipal currentUser,
-            @PathVariable UUID id) {
+            @PathVariable Long id) {
         log.info("Mark as read request for notificationId: {} by userId: {}", id, currentUser.getId());
         try {
             notificationService.markAsRead(id, currentUser.getId());
@@ -108,7 +106,7 @@ public class NotificationController {
     @Operation(summary = "Delete notification")
     public ResponseEntity<ApiResponse<Void>> deleteNotification(
             @CurrentUser UserPrincipal currentUser,
-            @PathVariable UUID id) {
+            @PathVariable Long id) {
         log.info("Delete notification request for notificationId: {} by userId: {}", id, currentUser.getId());
         try {
             notificationService.deleteNotification(id, currentUser.getId());

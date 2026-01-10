@@ -7,7 +7,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-import java.util.UUID;
 
 /**
  * Cart item DTO.
@@ -19,10 +18,10 @@ import java.util.UUID;
 public class CartItemDto {
 
     @JsonProperty("outlet_item_id")
-    private UUID outletItemId;
+    private Long outletItemId;
 
     @JsonProperty("item_id")
-    private UUID itemId;
+    private Long itemId;
 
     @JsonProperty("item_name")
     private String itemName;

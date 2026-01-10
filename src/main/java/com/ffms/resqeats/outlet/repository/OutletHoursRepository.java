@@ -8,7 +8,6 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * Outlet hours repository.
@@ -16,13 +15,13 @@ import java.util.UUID;
 @Repository
 public interface OutletHoursRepository extends com.ffms.resqeats.common.repository.BaseScopedRepository<OutletHours> {
 
-    List<OutletHours> findByOutletId(UUID outletId);
+    List<OutletHours> findByOutletId(Long outletId);
 
-    Optional<OutletHours> findByOutletIdAndDayOfWeek(UUID outletId, Integer dayOfWeek);
+    Optional<OutletHours> findByOutletIdAndDayOfWeek(Long outletId, Integer dayOfWeek);
 
     @Modifying
     @Query("DELETE FROM OutletHours h WHERE h.outletId = :outletId")
-    void deleteByOutletId(@Param("outletId") UUID outletId);
+    void deleteByOutletId(@Param("outletId") Long outletId);
 
     @Override
     default void validateScope(OutletHours entity) {

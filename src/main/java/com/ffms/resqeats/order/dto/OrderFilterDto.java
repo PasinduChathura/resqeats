@@ -10,7 +10,6 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * Filter DTO for order list queries.
@@ -24,13 +23,13 @@ import java.util.UUID;
 public class OrderFilterDto {
 
     @Schema(description = "Filter by user ID")
-    private UUID userId;
+    private Long userId;
 
     @Schema(description = "Filter by outlet ID")
-    private UUID outletId;
+    private Long outletId;
 
     @Schema(description = "Filter by merchant ID")
-    private UUID merchantId;
+    private Long merchantId;
 
     @Schema(description = "Filter by order status (CREATED, PENDING_OUTLET_ACCEPTANCE, PAID, PREPARING, etc.)")
     private OrderStatus status;
@@ -60,7 +59,7 @@ public class OrderFilterDto {
     private BigDecimal maxAmount;
 
     @Schema(description = "Filter by payment method ID")
-    private UUID paymentMethodId;
+    private Long paymentMethodId;
 
     @Schema(description = "Filter orders that are expired")
     private Boolean expired;

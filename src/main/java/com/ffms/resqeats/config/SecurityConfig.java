@@ -32,15 +32,15 @@ import java.util.Arrays;
 /**
  * Centralized Security Configuration.
  * 
- * Role Hierarchy: SUPER_ADMIN > ADMIN > MERCHANT > OUTLET_USER > USER
+ * Role Hierarchy: SUPER_ADMIN > ADMIN > MERCHANT_USER > OUTLET_USER > CUSTOMER_USER
  * 
  * Security Rules:
  * - Public endpoints: auth, oauth2, public item/outlet discovery
  * - SUPER_ADMIN: unrestricted access (audited)
  * - ADMIN: global access (audited)
- * - MERCHANT: merchant-scoped access
+ * - MERCHANT_USER: merchant-scoped access
  * - OUTLET_USER: outlet-scoped access
- * - USER: user-scoped access
+ * - CUSTOMER_USER: user-scoped access
  * 
  * CRITICAL-003 FIX: Added SameSite cookie configuration for OAuth2 flows.
  * MEDIUM-008 FIX: Swagger UI protection based on profile.
@@ -73,9 +73,9 @@ public class SecurityConfig {
         RoleHierarchyImpl hierarchy = new RoleHierarchyImpl();
         hierarchy.setHierarchy(
             "ROLE_SUPER_ADMIN > ROLE_ADMIN\n" +
-            "ROLE_ADMIN > ROLE_MERCHANT\n" +
-            "ROLE_MERCHANT > ROLE_OUTLET_USER\n" +
-            "ROLE_OUTLET_USER > ROLE_USER"
+            "ROLE_ADMIN > ROLE_MERCHANT_USER\n" +
+            "ROLE_MERCHANT_USER > ROLE_OUTLET_USER\n" +
+            "ROLE_OUTLET_USER > ROLE_CUSTOMER_USER"
         );
         return hierarchy;
     }

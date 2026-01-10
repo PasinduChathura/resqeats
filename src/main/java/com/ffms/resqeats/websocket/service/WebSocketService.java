@@ -8,7 +8,6 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * WebSocket service for real-time updates per SRS Section 6.11.
@@ -111,7 +110,7 @@ public class WebSocketService {
      * @param newQuantity the updated quantity of the item
      */
     @Async
-    public void broadcastInventoryUpdate(UUID outletId, UUID itemId, int newQuantity) {
+        public void broadcastInventoryUpdate(Long outletId, Long itemId, int newQuantity) {
         log.info("Broadcasting inventory update for outlet: {}, item: {}, quantity: {}", 
                 outletId, itemId, newQuantity);
 
@@ -139,7 +138,7 @@ public class WebSocketService {
      * @param itemId the unique identifier of the sold out item
      * @param itemName the display name of the sold out item
      */
-    public void broadcastItemSoldOut(UUID outletId, UUID itemId, String itemName) {
+        public void broadcastItemSoldOut(Long outletId, Long itemId, String itemName) {
         log.info("Broadcasting sold out notification for outlet: {}, item: {} ({})", 
                 outletId, itemId, itemName);
 
@@ -166,7 +165,7 @@ public class WebSocketService {
      * @param body the notification body message
      * @param data additional data to include with the notification
      */
-    public void sendNotificationToUser(UUID userId, String title, String body, Map<String, Object> data) {
+        public void sendNotificationToUser(Long userId, String title, String body, Map<String, Object> data) {
         log.info("Sending notification to user: {}, title: {}", userId, title);
         log.debug("Notification details - body: {}, data keys: {}", body, data.keySet());
 
@@ -189,7 +188,7 @@ public class WebSocketService {
      * @param outletId the unique identifier of the outlet
      * @param isOpen true if the outlet is now open, false if closed
      */
-    public void broadcastOutletStatusChange(UUID outletId, boolean isOpen) {
+        public void broadcastOutletStatusChange(Long outletId, boolean isOpen) {
         log.info("Broadcasting outlet status change for outlet: {}, isOpen: {}", outletId, isOpen);
 
         sendToTopic("outlet/" + outletId, Map.of(
@@ -260,7 +259,7 @@ public class WebSocketService {
      * @param destination the queue destination (without the /queue/ prefix)
      * @param payload the message payload to send
      */
-    private void sendToUser(UUID userId, String destination, Map<String, Object> payload) {
+        private void sendToUser(Long userId, String destination, Map<String, Object> payload) {
         log.debug("Sending message to user: {}, destination: /queue/{}", userId, destination);
 
         try {

@@ -6,8 +6,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.UUID;
-
 /**
  * Authentication response with JWT tokens per SRS Section 5.1 (FR-W-003).
  */
@@ -31,14 +29,14 @@ public class AuthResponse {
     private Long expiresIn;
 
     @JsonProperty("user_id")
-    private UUID userId;
+    private Long userId;
 
     @JsonProperty("role")
     private String role;
 
     @JsonProperty("merchant_id")
-    private UUID merchantId;
+    private Long merchantId;
 
     @JsonProperty("outlet_id")
-    private UUID outletId;
+    private Long outletId;
 }

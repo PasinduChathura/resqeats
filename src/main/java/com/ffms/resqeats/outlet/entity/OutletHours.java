@@ -10,7 +10,6 @@ import org.hibernate.annotations.FilterDef;
 import org.hibernate.annotations.ParamDef;
 
 import java.time.LocalTime;
-import java.util.UUID;
 
 /**
  * Outlet operating hours per SRS Section 7.2 (Outlet_Hours entity).
@@ -20,7 +19,7 @@ import java.util.UUID;
 @Table(name = "outlet_hours", indexes = {
         @Index(name = "idx_outlet_hours_outlet", columnList = "outlet_id")
 })
-@FilterDef(name = "outletHoursOutletFilter", parameters = @ParamDef(name = "outletId", type = String.class))
+@FilterDef(name = "outletHoursOutletFilter", parameters = @ParamDef(name = "outletId", type = Long.class))
 @Filter(name = "outletHoursOutletFilter", condition = "outlet_id = :outletId")
 @Getter
 @Setter
@@ -32,7 +31,7 @@ public class OutletHours extends BaseEntity {
     @NotNull
     @Column(name = "outlet_id", nullable = false)
     @JsonProperty("outlet_id")
-    private UUID outletId;
+    private Long outletId;
 
     /**
      * Day of week: 0=Sunday, 6=Saturday

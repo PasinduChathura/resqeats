@@ -9,7 +9,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 /**
  * Filter DTO for merchant list queries.
@@ -47,7 +46,7 @@ public class MerchantFilterDto {
     private LocalDateTime approvedTo;
 
     @Schema(description = "Filter by approver user ID")
-    private UUID approvedBy;
+    private Long approvedBy;
 
     @Schema(description = "Filter by city")
     private String city;

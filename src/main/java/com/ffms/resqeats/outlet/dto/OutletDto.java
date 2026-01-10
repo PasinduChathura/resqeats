@@ -11,7 +11,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * Outlet response DTO.
@@ -22,10 +21,10 @@ import java.util.UUID;
 @AllArgsConstructor
 public class OutletDto {
 
-    private UUID id;
+    private Long id;
 
     @JsonProperty("merchant_id")
-    private UUID merchantId;
+    private Long merchantId;
 
     private String name;
 

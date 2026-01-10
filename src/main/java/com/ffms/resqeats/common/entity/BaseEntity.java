@@ -12,10 +12,9 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 /**
- * Base entity with UUID primary key and audit fields.
+ * Base entity with BIGINT primary key and audit fields.
  * All entities in Resqeats extend this class per SRS Section 7.2.
  * 
  * MEDIUM FIX (Issue #9): Uses JPA Auditing with AuditorAware to properly
@@ -28,9 +27,9 @@ import java.util.UUID;
 public abstract class BaseEntity implements Serializable {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", updatable = false, nullable = false)
-    private UUID id;
+    private Long id;
 
     @CreatedDate
     @Column(name = "created_at", updatable = false, nullable = false)

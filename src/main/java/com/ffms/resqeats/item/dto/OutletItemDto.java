@@ -8,7 +8,6 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 /**
  * Outlet item response DTO (item with outlet-specific details).
@@ -20,10 +19,10 @@ import java.util.UUID;
 public class OutletItemDto {
 
     @JsonProperty("outlet_item_id")
-    private UUID outletItemId;
+    private Long outletItemId;
 
     @JsonProperty("outlet_id")
-    private UUID outletId;
+    private Long outletId;
 
     private ItemDto item;
 

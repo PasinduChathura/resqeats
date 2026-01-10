@@ -16,7 +16,6 @@ import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * User repository per SRS Section 6.3.
@@ -38,7 +37,7 @@ public interface UserRepository extends BaseScopedRepository<User>, JpaSpecifica
         if (entity == null) return;
         var context = SecurityContextHolder.getContext();
         if (context.hasGlobalAccess()) return;
-        if (context.getRole() == UserRole.MERCHANT) {
+        if (context.getRole() == UserRole.MERCHANT_USER) {
             requireMerchantScope(entity.getMerchantId());
             return;
         }
@@ -70,12 +69,12 @@ public interface UserRepository extends BaseScopedRepository<User>, JpaSpecifica
 
     Page<User> findByRoleAndStatus(UserRole role, UserStatus status, Pageable pageable);
 
-    List<User> findByMerchantId(UUID merchantId);
+    List<User> findByMerchantId(Long merchantId);
 
-    List<User> findByOutletId(UUID outletId);
+    List<User> findByOutletId(Long outletId);
 
     @Query("SELECT u FROM User u WHERE u.merchantId = :merchantId AND u.role = 'OUTLET_USER'")
-    List<User> findOutletUsersByMerchantId(@Param("merchantId") UUID merchantId);
+    List<User> findOutletUsersByMerchantId(@Param("merchantId") Long merchantId);
 
     @Query("SELECT COUNT(u) FROM User u WHERE u.role = :role AND u.status = 'ACTIVE'")
     long countActiveByRole(@Param("role") UserRole role);

@@ -4,7 +4,6 @@ import com.ffms.resqeats.order.entity.OrderItem;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-import java.util.UUID;
 
 /**
  * OrderItem repository.
@@ -12,9 +11,9 @@ import java.util.UUID;
 @Repository
 public interface OrderItemRepository extends com.ffms.resqeats.common.repository.BaseScopedRepository<OrderItem> {
 
-    List<OrderItem> findByOrderId(UUID orderId);
+    List<OrderItem> findByOrderId(Long orderId);
 
-    void deleteByOrderId(UUID orderId);
+    void deleteByOrderId(Long orderId);
 
     @Override
     default void validateScope(OrderItem entity) {

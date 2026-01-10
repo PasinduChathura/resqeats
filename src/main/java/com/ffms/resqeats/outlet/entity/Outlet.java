@@ -14,7 +14,6 @@ import org.hibernate.annotations.FilterDef;
 import org.hibernate.annotations.ParamDef;
 
 import java.math.BigDecimal;
-import java.util.UUID;
 
 /**
  * Outlet entity per SRS Section 7.2.
@@ -29,7 +28,7 @@ import java.util.UUID;
         @Index(name = "idx_outlet_status", columnList = "status"),
         @Index(name = "idx_outlet_location", columnList = "latitude, longitude")
 })
-@FilterDef(name = "outletMerchantFilter", parameters = @ParamDef(name = "merchantId", type = String.class))
+@FilterDef(name = "outletMerchantFilter", parameters = @ParamDef(name = "merchantId", type = Long.class))
 @Filter(name = "outletMerchantFilter", condition = "merchant_id = :merchantId")
 @TenantScoped(TenantScopeType.MERCHANT)
 @Getter
@@ -42,7 +41,7 @@ public class Outlet extends BaseEntity {
     @NotNull
     @Column(name = "merchant_id", nullable = false)
     @JsonProperty("merchant_id")
-    private UUID merchantId;
+    private Long merchantId;
 
     @NotBlank
     @Column(name = "name", length = 255, nullable = false)

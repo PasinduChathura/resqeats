@@ -14,7 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -70,7 +69,7 @@ public class InventoryService {
      * @param outletItemId the unique identifier of the outlet item
      * @return the available stock quantity, minimum of 0
      */
-    public int getAvailableStock(UUID outletItemId) {
+    public int getAvailableStock(Long outletItemId) {
         log.info("Getting available stock for outletItemId={}", outletItemId);
         
         String inventoryKey = INVENTORY_KEY_PREFIX + outletItemId;
@@ -97,7 +96,7 @@ public class InventoryService {
      * @param cartId the unique identifier of the cart making the reservation
      * @return {@code true} if reservation was successful, {@code false} if insufficient stock
      */
-    public boolean reserveForCart(UUID outletItemId, int quantity, String cartId) {
+    public boolean reserveForCart(Long outletItemId, int quantity, String cartId) {
         log.info("Reserving stock for cart: outletItemId={}, quantity={}, cartId={}", 
                 outletItemId, quantity, cartId);
         
@@ -131,7 +130,7 @@ public class InventoryService {
      * @param outletItemId the unique identifier of the outlet item
      * @param cartId the unique identifier of the cart whose reservation should be released
      */
-    public void releaseCartReservation(UUID outletItemId, String cartId) {
+    public void releaseCartReservation(Long outletItemId, String cartId) {
         log.info("Releasing cart reservation: outletItemId={}, cartId={}", outletItemId, cartId);
         
         String reservedKey = RESERVED_KEY_PREFIX + outletItemId;
@@ -159,7 +158,7 @@ public class InventoryService {
      * @throws BusinessException with code INV_001 if insufficient stock is available
      */
     @Transactional
-    public void decrementStock(UUID outletItemId, int quantity) {
+    public void decrementStock(Long outletItemId, int quantity) {
         log.info("Decrementing stock: outletItemId={}, quantity={}", outletItemId, quantity);
         
         String inventoryKey = INVENTORY_KEY_PREFIX + outletItemId;
@@ -194,7 +193,7 @@ public class InventoryService {
      * @param quantity the quantity to increment
      */
     @Transactional
-    public void incrementStock(UUID outletItemId, int quantity) {
+    public void incrementStock(Long outletItemId, int quantity) {
         log.info("Incrementing stock: outletItemId={}, quantity={}", outletItemId, quantity);
         
         String inventoryKey = INVENTORY_KEY_PREFIX + outletItemId;
@@ -223,7 +222,7 @@ public class InventoryService {
      * @throws BusinessException with code INV_003 if outlet item is not found
      */
     @Transactional
-    public void setStock(UUID outletItemId, int quantity) {
+    public void setStock(Long outletItemId, int quantity) {
         log.info("Setting stock: outletItemId={}, quantity={}", outletItemId, quantity);
         
         if (quantity < 0) {
@@ -256,7 +255,7 @@ public class InventoryService {
      * @param outletItemId the unique identifier of the outlet item to initialize
      * @throws BusinessException with code INV_003 if outlet item is not found
      */
-    public void initializeStock(UUID outletItemId) {
+    public void initializeStock(Long outletItemId) {
         log.info("Initializing stock in Redis cache: outletItemId={}", outletItemId);
         
         OutletItem item = outletItemRepository.findById(outletItemId)
@@ -280,7 +279,7 @@ public class InventoryService {
      * @param outletItemId the unique identifier of the outlet item
      * @return {@code true} if the item has available stock, {@code false} otherwise
      */
-    public boolean isInStock(UUID outletItemId) {
+    public boolean isInStock(Long outletItemId) {
         log.debug("Checking stock availability: outletItemId={}", outletItemId);
         boolean inStock = getAvailableStock(outletItemId) > 0;
         log.debug("Stock availability check result: outletItemId={}, inStock={}", outletItemId, inStock);
@@ -296,10 +295,10 @@ public class InventoryService {
      * @param outletItemIds an iterable collection of outlet item identifiers
      * @return a map of outlet item IDs to their available stock levels
      */
-    public Map<UUID, Integer> getStockLevels(Iterable<UUID> outletItemIds) {
+    public Map<Long, Integer> getStockLevels(Iterable<Long> outletItemIds) {
         log.info("Getting stock levels in bulk");
         
-        List<UUID> ids = StreamSupport.stream(outletItemIds.spliterator(), false)
+        List<Long> ids = StreamSupport.stream(outletItemIds.spliterator(), false)
                 .collect(Collectors.toList());
         
         if (ids.isEmpty()) {
@@ -319,9 +318,9 @@ public class InventoryService {
         List<Object> inventoryValues = redisTemplate.opsForValue().multiGet(inventoryKeys);
         List<Object> reservedValues = redisTemplate.opsForValue().multiGet(reservedKeys);
 
-        Map<UUID, Integer> result = new ConcurrentHashMap<>();
+        Map<Long, Integer> result = new ConcurrentHashMap<>();
         for (int i = 0; i < ids.size(); i++) {
-            UUID id = ids.get(i);
+            Long id = ids.get(i);
             int total = inventoryValues != null && inventoryValues.get(i) != null 
                     ? ((Number) inventoryValues.get(i)).intValue() : 0;
             int reserved = reservedValues != null && reservedValues.get(i) != null 
@@ -386,7 +385,7 @@ public class InventoryService {
      * @param outletItemId the unique identifier of the outlet item
      * @return the stock quantity, or 0 if not found
      */
-    private Integer getFromRedisOrDb(String key, UUID outletItemId) {
+    private Integer getFromRedisOrDb(String key, Long outletItemId) {
         Object value = redisTemplate.opsForValue().get(key);
         if (value != null) {
             log.debug("Stock retrieved from Redis cache: outletItemId={}, value={}", outletItemId, value);

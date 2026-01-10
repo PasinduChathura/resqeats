@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 /**
  * Order list response DTO with essential fields and association data for table display.
@@ -20,16 +19,16 @@ import java.util.UUID;
 @AllArgsConstructor
 public class OrderListResponseDto {
 
-    private UUID id;
+    private Long id;
 
     @JsonProperty("order_number")
     private String orderNumber;
 
     @JsonProperty("user_id")
-    private UUID userId;
+    private Long userId;
 
     @JsonProperty("outlet_id")
-    private UUID outletId;
+    private Long outletId;
 
     private OrderStatus status;
 
@@ -80,7 +79,7 @@ public class OrderListResponseDto {
     private String outletAddress;
 
     @JsonProperty("merchant_id")
-    private UUID merchantId;
+    private Long merchantId;
 
     @JsonProperty("merchant_name")
     private String merchantName;

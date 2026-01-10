@@ -25,8 +25,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.UUID;
-
 /**
  * Merchant controller per SRS Section 6.2.
  * 
@@ -58,7 +56,7 @@ public class MerchantController {
 
     @GetMapping("/merchants/{id}")
     @Operation(summary = "Get merchant details")
-    public ResponseEntity<ApiResponse<MerchantDto>> getMerchant(@PathVariable UUID id) {
+    public ResponseEntity<ApiResponse<MerchantDto>> getMerchant(@PathVariable Long id) {
         log.info("Get merchant details request for merchantId: {}", id);
         try {
             MerchantDto merchant = merchantService.getMerchant(id);
@@ -94,7 +92,7 @@ public class MerchantController {
 
     @PostMapping("/merchants")
     @Operation(summary = "Register as merchant")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('CUSTOMER_USER')")
     public ResponseEntity<ApiResponse<MerchantDto>> registerMerchant(
             @CurrentUser UserPrincipal currentUser,
             @Valid @RequestBody CreateMerchantRequest request) {
@@ -115,7 +113,7 @@ public class MerchantController {
 
     @GetMapping("/merchants/me")
     @Operation(summary = "Get my merchant")
-    @PreAuthorize("hasRole('MERCHANT')")
+    @PreAuthorize("hasRole('MERCHANT_USER')")
     public ResponseEntity<ApiResponse<MerchantDto>> getMyMerchant(@CurrentUser UserPrincipal currentUser) {
         log.info("Get my merchant request from userId: {}", currentUser.getId());
         try {
@@ -130,7 +128,7 @@ public class MerchantController {
 
     @PutMapping("/merchants/me")
     @Operation(summary = "Update my merchant")
-    @PreAuthorize("hasRole('MERCHANT')")
+    @PreAuthorize("hasRole('MERCHANT_USER')")
     public ResponseEntity<ApiResponse<MerchantDto>> updateMyMerchant(
             @CurrentUser UserPrincipal currentUser,
             @Valid @RequestBody UpdateMerchantRequest request) {
@@ -176,7 +174,7 @@ public class MerchantController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<MerchantDto>> approveMerchant(
             @CurrentUser UserPrincipal currentUser,
-            @PathVariable UUID id) {
+            @PathVariable Long id) {
         log.info("Approve merchant request for merchantId: {} by adminId: {}", id, currentUser.getId());
         try {
             MerchantDto merchant = merchantService.approveMerchant(id, currentUser.getId());
@@ -193,7 +191,7 @@ public class MerchantController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<MerchantDto>> rejectMerchant(
             @CurrentUser UserPrincipal currentUser,
-            @PathVariable UUID id,
+            @PathVariable Long id,
             @Valid @RequestBody RejectRequest request) {
         log.info("Reject merchant request for merchantId: {} - Reason: {}", id, request.getReason());
         try {
@@ -211,7 +209,7 @@ public class MerchantController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<MerchantDto>> suspendMerchant(
             @CurrentUser UserPrincipal currentUser,
-            @PathVariable UUID id,
+            @PathVariable Long id,
             @Valid @RequestBody SuspendRequest request) {
         log.info("Suspend merchant request for merchantId: {} - Reason: {}", id, request.getReason());
         try {

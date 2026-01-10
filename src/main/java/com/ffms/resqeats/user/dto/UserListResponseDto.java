@@ -9,7 +9,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 /**
  * User list response DTO with association data for table display.
@@ -21,7 +20,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class UserListResponseDto {
 
-    private UUID id;
+    private Long id;
 
     private String email;
 
@@ -63,7 +62,7 @@ public class UserListResponseDto {
     @AllArgsConstructor
     public static class MerchantAssociation {
         @JsonProperty("merchant_id")
-        private UUID merchantId;
+        private Long merchantId;
 
         @JsonProperty("merchant_name")
         private String merchantName;
@@ -90,7 +89,7 @@ public class UserListResponseDto {
     @AllArgsConstructor
     public static class OutletAssociation {
         @JsonProperty("outlet_id")
-        private UUID outletId;
+        private Long outletId;
 
         @JsonProperty("outlet_name")
         private String outletName;
@@ -102,7 +101,7 @@ public class UserListResponseDto {
         private String outletCity;
 
         @JsonProperty("merchant_id")
-        private UUID merchantId;
+        private Long merchantId;
 
         @JsonProperty("merchant_name")
         private String merchantName;

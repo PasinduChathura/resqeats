@@ -52,7 +52,7 @@ public class CartService {
      * @return the cart DTO or empty cart if none exists
      */
     @SuppressWarnings("unchecked")
-    public CartDto getCart(UUID userId) {
+    public CartDto getCart(Long userId) {
         log.info("Retrieving cart for userId: {}", userId);
         String cartKey = CART_KEY_PREFIX + userId;
         Map<String, Object> cartData = (Map<String, Object>) redisTemplate.opsForValue().get(cartKey);
@@ -77,7 +77,7 @@ public class CartService {
      * @throws BusinessException if item not found, insufficient stock, or outlet mismatch
      */
     @SuppressWarnings("unchecked")
-    public CartDto addItem(UUID userId, UUID outletItemId, int quantity) {
+    public CartDto addItem(Long userId, Long outletItemId, int quantity) {
         log.info("Adding item to cart - userId: {}, outletItemId: {}, quantity: {}", userId, outletItemId, quantity);
         
         if (quantity <= 0) {
@@ -97,7 +97,7 @@ public class CartService {
                     return new BusinessException("CART_002", "Item not found");
                 });
 
-        UUID outletId = outletItem.getOutletId();
+        Long outletId = outletItem.getOutletId();
 
         int available = inventoryService.getAvailableStock(outletItemId);
         if (available < quantity) {
@@ -171,7 +171,7 @@ public class CartService {
      * @throws BusinessException if cart empty, item not in cart, or insufficient stock
      */
     @SuppressWarnings("unchecked")
-    public CartDto updateItemQuantity(UUID userId, UUID outletItemId, int quantity) {
+    public CartDto updateItemQuantity(Long userId, Long outletItemId, int quantity) {
         log.info("Updating cart item - userId: {}, outletItemId: {}, newQuantity: {}", userId, outletItemId, quantity);
         
         if (quantity < 0) {
@@ -236,7 +236,7 @@ public class CartService {
      * @return the updated cart DTO
      */
     @SuppressWarnings("unchecked")
-    public CartDto removeItem(UUID userId, UUID outletItemId) {
+    public CartDto removeItem(Long userId, Long outletItemId) {
         log.info("Removing item from cart - userId: {}, outletItemId: {}", userId, outletItemId);
         String cartKey = CART_KEY_PREFIX + userId;
         Map<String, Object> cartData = (Map<String, Object>) redisTemplate.opsForValue().get(cartKey);
@@ -271,7 +271,7 @@ public class CartService {
      * @param userId the user ID
      */
     @SuppressWarnings("unchecked")
-    public void clearCart(UUID userId) {
+    public void clearCart(Long userId) {
         log.info("Clearing cart for userId: {}", userId);
         String cartKey = CART_KEY_PREFIX + userId;
         Map<String, Object> cartData = (Map<String, Object>) redisTemplate.opsForValue().get(cartKey);
@@ -281,7 +281,7 @@ public class CartService {
             if (items != null) {
                 String cartId = userId.toString();
                 items.keySet().forEach(outletItemId -> {
-                    inventoryService.releaseCartReservation(UUID.fromString(outletItemId), cartId);
+                    inventoryService.releaseCartReservation(Long.valueOf(outletItemId), cartId);
                     log.debug("Released cart reservation for outletItemId: {}", outletItemId);
                 });
             }
@@ -299,7 +299,7 @@ public class CartService {
      * @throws BusinessException if cart is empty or all items out of stock
      */
     @SuppressWarnings("unchecked")
-    public CartDto validateCart(UUID userId) {
+    public CartDto validateCart(Long userId) {
         log.info("Validating cart for checkout - userId: {}", userId);
         String cartKey = CART_KEY_PREFIX + userId;
         Map<String, Object> cartData = (Map<String, Object>) redisTemplate.opsForValue().get(cartKey);
@@ -318,16 +318,16 @@ public class CartService {
         List<String> removedItems = new ArrayList<>();
         List<String> adjustedItems = new ArrayList<>();
 
-        List<UUID> outletItemIds = items.keySet().stream()
-                .map(UUID::fromString)
-                .collect(java.util.stream.Collectors.toList());
-        Map<UUID, Integer> stockLevels = inventoryService.getStockLevels(outletItemIds);
+        List<Long> outletItemIds = items.keySet().stream()
+            .map(Long::valueOf)
+            .collect(java.util.stream.Collectors.toList());
+        Map<Long, Integer> stockLevels = inventoryService.getStockLevels(outletItemIds);
         log.debug("Batch fetched stock levels for {} items", outletItemIds.size());
 
         Iterator<Map.Entry<String, Map<String, Object>>> iterator = items.entrySet().iterator();
         while (iterator.hasNext()) {
             Map.Entry<String, Map<String, Object>> entry = iterator.next();
-            UUID outletItemId = UUID.fromString(entry.getKey());
+            Long outletItemId = Long.valueOf(entry.getKey());
             Map<String, Object> cartItem = entry.getValue();
 
             int requestedQty = (int) cartItem.get("quantity");
@@ -369,7 +369,7 @@ public class CartService {
      * @param userId the user ID
      * @return the validated cart DTO ready for checkout
      */
-    public CartDto getCartForCheckout(UUID userId) {
+    public CartDto getCartForCheckout(Long userId) {
         log.info("Getting cart for checkout - userId: {}", userId);
         CartDto validatedCart = validateCart(userId);
         log.info("Cart ready for checkout - userId: {}, itemCount: {}", userId, validatedCart.getItemCount());
@@ -384,11 +384,11 @@ public class CartService {
      * @return the mapped CartDto
      */
     @SuppressWarnings("unchecked")
-    private CartDto mapToCartDto(Map<String, Object> cartData, UUID userId) {
+    private CartDto mapToCartDto(Map<String, Object> cartData, Long userId) {
         CartDto cart = new CartDto();
         cart.setUserId(userId);
         cart.setOutletId(cartData.get("outletId") != null 
-                ? UUID.fromString((String) cartData.get("outletId")) : null);
+                ? Long.valueOf((String) cartData.get("outletId")) : null);
 
         Map<String, Map<String, Object>> items = (Map<String, Map<String, Object>>) cartData.get("items");
         List<CartItemDto> cartItems = new ArrayList<>();
@@ -398,8 +398,8 @@ public class CartService {
         if (items != null) {
             for (Map<String, Object> itemData : items.values()) {
                 CartItemDto item = new CartItemDto();
-                item.setOutletItemId(UUID.fromString((String) itemData.get("outletItemId")));
-                item.setItemId(UUID.fromString((String) itemData.get("itemId")));
+                item.setOutletItemId(Long.valueOf((String) itemData.get("outletItemId")));
+                item.setItemId(Long.valueOf((String) itemData.get("itemId")));
                 item.setItemName((String) itemData.get("itemName"));
                 item.setUnitPrice(new BigDecimal((String) itemData.get("unitPrice")));
                 item.setOriginalPrice(new BigDecimal((String) itemData.get("originalPrice")));

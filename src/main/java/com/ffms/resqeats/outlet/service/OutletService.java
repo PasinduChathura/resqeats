@@ -30,7 +30,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -79,7 +78,7 @@ public class OutletService {
      * @throws BusinessException with code AUTH_003 if user is not authorized
      */
     @Transactional
-    public OutletDto createOutlet(UUID merchantId, CreateOutletRequest request, UUID userId) {
+    public OutletDto createOutlet(Long merchantId, CreateOutletRequest request, Long userId) {
         log.info("Creating outlet for merchant: {} by user: {}", merchantId, userId);
         log.debug("Outlet creation request details - name: {}, city: {}", request.getName(), request.getCity());
 
@@ -157,7 +156,7 @@ public class OutletService {
      * @throws BusinessException with code AUTH_003 if user is not authorized
      */
     @Transactional
-    public OutletDto updateOutlet(UUID outletId, UpdateOutletRequest request, UUID userId) {
+    public OutletDto updateOutlet(Long outletId, UpdateOutletRequest request, Long userId) {
         log.info("Updating outlet: {} by user: {}", outletId, userId);
         
         Outlet outlet = getOutletOrThrow(outletId);
@@ -200,8 +199,8 @@ public class OutletService {
      * @throws BusinessException with code AUTH_003 if user is not authorized
      */
     @Transactional
-    public OutletDto setOperatingHours(UUID outletId, List<CreateOutletRequest.OperatingHoursRequest> hoursRequest, 
-                                        UUID userId) {
+    public OutletDto setOperatingHours(Long outletId, List<CreateOutletRequest.OperatingHoursRequest> hoursRequest, 
+                                        Long userId) {
         log.info("Setting operating hours for outlet: {} by user: {}", outletId, userId);
         
         Outlet outlet = getOutletOrThrow(outletId);
@@ -240,7 +239,7 @@ public class OutletService {
      * @throws BusinessException with code OUTLET_002 if operating hours are not set
      */
     @Transactional
-    public OutletDto activateOutlet(UUID outletId, UUID userId) {
+    public OutletDto activateOutlet(Long outletId, Long userId) {
         log.info("Activating outlet: {} by user: {}", outletId, userId);
         
         Outlet outlet = getOutletOrThrow(outletId);
@@ -272,7 +271,7 @@ public class OutletService {
      * @throws BusinessException with code AUTH_003 if user is not authorized
      */
     @Transactional
-    public OutletDto deactivateOutlet(UUID outletId, UUID userId) {
+    public OutletDto deactivateOutlet(Long outletId, Long userId) {
         log.info("Deactivating outlet: {} by user: {}", outletId, userId);
         
         Outlet outlet = getOutletOrThrow(outletId);
@@ -301,7 +300,7 @@ public class OutletService {
      * @throws BusinessException with code AUTH_003 if user is not authorized
      */
     @Transactional
-    public OutletDto temporarilyCloseOutlet(UUID outletId, UUID userId) {
+    public OutletDto temporarilyCloseOutlet(Long outletId, Long userId) {
         log.info("Temporarily closing outlet: {} by user: {}", outletId, userId);
         
         Outlet outlet = getOutletOrThrow(outletId);
@@ -331,7 +330,7 @@ public class OutletService {
      * @throws BusinessException with code OUTLET_003 if outlet is not temporarily closed
      */
     @Transactional
-    public OutletDto reopenOutlet(UUID outletId, UUID userId) {
+    public OutletDto reopenOutlet(Long outletId, Long userId) {
         log.info("Reopening outlet: {} by user: {}", outletId, userId);
         
         Outlet outlet = getOutletOrThrow(outletId);
@@ -362,7 +361,7 @@ public class OutletService {
      * @param outletId the unique identifier of the outlet to check
      * @return true if the outlet is active and within operating hours, false otherwise
      */
-    public boolean isCurrentlyOpen(UUID outletId) {
+    public boolean isCurrentlyOpen(Long outletId) {
         log.debug("Checking if outlet is currently open: {}", outletId);
         
         Outlet outlet = outletRepository.findById(outletId).orElse(null);
@@ -403,7 +402,7 @@ public class OutletService {
      * @return the outlet as a DTO
      * @throws BusinessException with code OUTLET_004 if outlet is not found
      */
-    public OutletDto getOutlet(UUID outletId) {
+    public OutletDto getOutlet(Long outletId) {
         log.info("Retrieving outlet: {}", outletId);
         OutletDto outlet = toDto(getOutletOrThrow(outletId));
         log.debug("Outlet retrieved successfully: {}", outletId);
@@ -416,7 +415,7 @@ public class OutletService {
      * @param merchantId the unique identifier of the merchant
      * @return a list of outlets as DTOs
      */
-    public List<OutletDto> getOutletsByMerchant(UUID merchantId) {
+    public List<OutletDto> getOutletsByMerchant(Long merchantId) {
         log.info("Retrieving outlets for merchant: {}", merchantId);
         List<OutletDto> outlets = outletRepository.findByMerchantId(merchantId).stream()
                 .map(this::toDto)
@@ -515,7 +514,7 @@ public class OutletService {
      * @return the outlet entity
      * @throws BusinessException with code OUTLET_004 if outlet is not found
      */
-    private Outlet getOutletOrThrow(UUID outletId) {
+    private Outlet getOutletOrThrow(Long outletId) {
         return outletRepository.findById(outletId)
                 .orElseThrow(() -> {
                     log.error("Outlet not found with ID: {}", outletId);
@@ -537,7 +536,7 @@ public class OutletService {
      * @param userId the unique identifier of the user requesting access
      * @throws BusinessException with code AUTH_003 if user is not authorized
      */
-    private void validateOutletAccess(Outlet outlet, UUID userId) {
+    private void validateOutletAccess(Outlet outlet, Long userId) {
         log.debug("Validating outlet access for user: {} on outlet: {}", userId, outlet.getId());
         
         User user = userRepository.findById(userId)

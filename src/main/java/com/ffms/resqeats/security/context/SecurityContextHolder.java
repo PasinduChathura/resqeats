@@ -65,7 +65,7 @@ public class SecurityContextHolder {
     /**
      * Get current user ID.
      */
-    public static UUID getCurrentUserId() {
+    public static Long getCurrentUserId() {
         return getContext().getUserId();
     }
 
@@ -79,14 +79,14 @@ public class SecurityContextHolder {
     /**
      * Get current merchant ID (for scoping).
      */
-    public static UUID getCurrentMerchantId() {
+    public static Long getCurrentMerchantId() {
         return getContext().getMerchantId();
     }
 
     /**
      * Get current outlet ID (for scoping).
      */
-    public static UUID getCurrentOutletId() {
+    public static Long getCurrentOutletId() {
         return getContext().getOutletId();
     }
 
@@ -121,14 +121,14 @@ public class SecurityContextHolder {
     /**
      * Get effective merchant ID for data filtering.
      */
-    public static UUID getEffectiveMerchantId() {
+    public static Long getEffectiveMerchantId() {
         return getContext().getEffectiveMerchantId();
     }
 
     /**
      * Get effective outlet ID for data filtering.
      */
-    public static UUID getEffectiveOutletId() {
+    public static Long getEffectiveOutletId() {
         return getContext().getEffectiveOutletId();
     }
 

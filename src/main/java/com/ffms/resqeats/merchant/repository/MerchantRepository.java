@@ -13,7 +13,6 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * Merchant repository per SRS Section 6.4.
@@ -24,9 +23,9 @@ import java.util.UUID;
 @Repository
 public interface MerchantRepository extends BaseScopedRepository<Merchant>, JpaSpecificationExecutor<Merchant> {
 
-    Optional<Merchant> findByOwnerUserId(UUID ownerUserId);
+    Optional<Merchant> findByOwnerUserId(Long ownerUserId);
 
-    boolean existsByOwnerUserId(UUID ownerUserId);
+    boolean existsByOwnerUserId(Long ownerUserId);
 
     Page<Merchant> findByStatus(MerchantStatus status, Pageable pageable);
 

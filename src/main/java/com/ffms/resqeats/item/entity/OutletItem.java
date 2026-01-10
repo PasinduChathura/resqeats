@@ -11,8 +11,6 @@ import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.FilterDef;
 import org.hibernate.annotations.ParamDef;
 
-import java.util.UUID;
-
 /**
  * OutletItem entity per SRS Section 7.2.
  * Junction table for Item-Outlet many-to-many relationship.
@@ -27,7 +25,7 @@ import java.util.UUID;
 }, uniqueConstraints = {
         @UniqueConstraint(columnNames = {"outlet_id", "item_id"})
 })
-@FilterDef(name = "outletItemOutletFilter", parameters = @ParamDef(name = "outletId", type = String.class))
+@FilterDef(name = "outletItemOutletFilter", parameters = @ParamDef(name = "outletId", type = Long.class))
 @Filter(name = "outletItemOutletFilter", condition = "outlet_id = :outletId")
 @TenantScoped(TenantScopeType.OUTLET)
 @Getter
@@ -40,12 +38,12 @@ public class OutletItem extends BaseEntity {
     @NotNull
     @Column(name = "outlet_id", nullable = false)
     @JsonProperty("outlet_id")
-    private UUID outletId;
+    private Long outletId;
 
     @NotNull
     @Column(name = "item_id", nullable = false)
     @JsonProperty("item_id")
-    private UUID itemId;
+    private Long itemId;
 
     /**
      * Whether item is currently available for sale at this outlet.

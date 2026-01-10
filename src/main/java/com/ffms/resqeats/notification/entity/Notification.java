@@ -15,7 +15,6 @@ import org.hibernate.annotations.FilterDef;
 import org.hibernate.annotations.ParamDef;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 /**
  * Notification entity per SRS Section 4.8 and 6.12.
@@ -29,7 +28,7 @@ import java.util.UUID;
         @Index(name = "idx_notification_type", columnList = "type"),
         @Index(name = "idx_notification_status", columnList = "status")
 })
-@FilterDef(name = "notificationUserFilter", parameters = @ParamDef(name = "userId", type = String.class))
+@FilterDef(name = "notificationUserFilter", parameters = @ParamDef(name = "userId", type = Long.class))
 @Filter(name = "notificationUserFilter", condition = "user_id = :userId")
 @TenantScoped(TenantScopeType.USER)
 @Getter
@@ -42,7 +41,7 @@ public class Notification extends BaseEntity {
     @NotNull
     @Column(name = "user_id", nullable = false)
     @JsonProperty("user_id")
-    private UUID userId;
+    private Long userId;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "type", length = 50, nullable = false)
@@ -73,14 +72,14 @@ public class Notification extends BaseEntity {
      */
     @Column(name = "order_id")
     @JsonProperty("order_id")
-    private UUID orderId;
+    private Long orderId;
 
     /**
      * Related outlet ID (if applicable).
      */
     @Column(name = "outlet_id")
     @JsonProperty("outlet_id")
-    private UUID outletId;
+    private Long outletId;
 
     @Column(name = "sent_at")
     @JsonProperty("sent_at")

@@ -9,8 +9,6 @@ import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.FilterDef;
 import org.hibernate.annotations.ParamDef;
 
-import java.util.UUID;
-
 /**
  * PaymentMethod entity per SRS Section 7.2.
  * Stores tokenized payment methods (no raw card data per PCI-DSS).
@@ -19,7 +17,7 @@ import java.util.UUID;
 @Table(name = "payment_methods", indexes = {
         @Index(name = "idx_payment_method_user", columnList = "user_id")
 })
-@FilterDef(name = "paymentMethodUserFilter", parameters = @ParamDef(name = "userId", type = String.class))
+@FilterDef(name = "paymentMethodUserFilter", parameters = @ParamDef(name = "userId", type = Long.class))
 @Filter(name = "paymentMethodUserFilter", condition = "user_id = :userId")
 @Getter
 @Setter
@@ -31,7 +29,7 @@ public class PaymentMethod extends BaseEntity {
     @NotNull
     @Column(name = "user_id", nullable = false)
     @JsonProperty("user_id")
-    private UUID userId;
+    private Long userId;
 
     /**
      * IPG token representing the card.

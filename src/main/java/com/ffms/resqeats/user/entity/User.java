@@ -17,15 +17,13 @@ import org.hibernate.annotations.FilterDefs;
 import org.hibernate.annotations.Filters;
 import org.hibernate.annotations.ParamDef;
 
-import java.util.UUID;
-
 /**
  * User entity per SRS Section 7.2.
  * Supports phone/OTP, email/password, and OAuth2 authentication.
- * Enforces RBAC: ADMIN, MERCHANT, OUTLET_USER, USER.
+ * Enforces RBAC: ADMIN, MERCHANT_USER, OUTLET_USER, CUSTOMER_USER.
  * 
  * HIBERNATE FILTERS (applied at repository level via TenantFilterAspect):
- * - userMerchantFilter: MERCHANT role sees users within their merchant
+ * - userMerchantFilter: MERCHANT_USER role sees users within their merchant
  * - userOutletFilter: OUTLET_USER role sees users within their outlet
  */
 @Entity
@@ -34,8 +32,8 @@ import java.util.UUID;
         @UniqueConstraint(columnNames = "email")
 })
 @FilterDefs({
-    @FilterDef(name = "userMerchantFilter", parameters = @ParamDef(name = "merchantId", type = String.class)),
-    @FilterDef(name = "userOutletFilter", parameters = @ParamDef(name = "outletId", type = String.class))
+    @FilterDef(name = "userMerchantFilter", parameters = @ParamDef(name = "merchantId", type = Long.class)),
+    @FilterDef(name = "userOutletFilter", parameters = @ParamDef(name = "outletId", type = Long.class))
 })
 @Filters({
     @Filter(name = "userMerchantFilter", condition = "merchant_id = :merchantId"),
@@ -66,7 +64,7 @@ public class User extends BaseEntity {
     @Column(name = "role", length = 20, nullable = false)
     @JsonProperty("role")
     @Builder.Default
-    private UserRole role = UserRole.USER;
+    private UserRole role = UserRole.CUSTOMER_USER;
 
     @Column(name = "first_name", length = 100)
     @JsonProperty("first_name")
@@ -87,12 +85,12 @@ public class User extends BaseEntity {
     private UserStatus status = UserStatus.ACTIVE;
 
     /**
-     * Associated merchant for MERCHANT role users.
-     * Per SRS: MERCHANT users can only access their own merchant's outlets.
+        * Associated merchant for MERCHANT_USER role users.
+        * Per SRS: MERCHANT_USER users can only access their own merchant's outlets.
      */
     @Column(name = "merchant_id")
     @JsonProperty("merchant_id")
-    private UUID merchantId;
+    private Long merchantId;
 
     /**
      * Read-only association for efficient joins.
@@ -109,7 +107,7 @@ public class User extends BaseEntity {
      */
     @Column(name = "outlet_id")
     @JsonProperty("outlet_id")
-    private UUID outletId;
+    private Long outletId;
 
     /**
      * Read-only association for efficient joins.
@@ -182,7 +180,7 @@ public class User extends BaseEntity {
      * Check if user is a merchant owner.
      */
     public boolean isMerchant() {
-        return role == UserRole.MERCHANT;
+        return role == UserRole.MERCHANT_USER;
     }
 
     /**
@@ -196,7 +194,7 @@ public class User extends BaseEntity {
      * Check if user is a regular customer.
      */
     public boolean isCustomer() {
-        return role == UserRole.USER;
+        return role == UserRole.CUSTOMER_USER;
     }
 
     /**

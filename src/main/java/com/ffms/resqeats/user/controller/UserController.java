@@ -23,8 +23,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.UUID;
-
 /**
  * User controller per SRS Section 6.2.
  * 
@@ -149,7 +147,7 @@ public class UserController {
     @GetMapping("/{id}")
     @Operation(summary = "Get user details")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<UserDto>> getUserById(@PathVariable UUID id) {
+    public ResponseEntity<ApiResponse<UserDto>> getUserById(@PathVariable Long id) {
         log.info("Get user details request for userId: {}", id);
         try {
             UserDto user = userService.getUserById(id);
@@ -165,7 +163,7 @@ public class UserController {
     @Operation(summary = "Suspend user")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<UserDto>> suspendUser(
-            @PathVariable UUID id,
+            @PathVariable Long id,
             @RequestBody(required = false) SuspendRequest request) {
         String reason = request != null ? request.getReason() : "Admin action";
         log.info("Suspend user request for userId: {} - Reason: {}", id, reason);
@@ -182,7 +180,7 @@ public class UserController {
     @PostMapping("/{id}/reactivate")
     @Operation(summary = "Reactivate user")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<UserDto>> reactivateUser(@PathVariable UUID id) {
+    public ResponseEntity<ApiResponse<UserDto>> reactivateUser(@PathVariable Long id) {
         log.info("Reactivate user request for userId: {}", id);
         try {
             UserDto user = userService.reactivateUser(id);

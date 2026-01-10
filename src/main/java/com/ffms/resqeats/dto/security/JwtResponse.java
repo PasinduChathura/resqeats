@@ -3,7 +3,6 @@ package com.ffms.resqeats.dto.security;
 import lombok.*;
 
 import java.util.List;
-import java.util.UUID;
 
 /**
  * JWT response DTO per SRS Section 4.2 (FR-U-009).
@@ -21,7 +20,7 @@ public class JwtResponse {
     @Builder.Default
     private String type = "Bearer";
 
-    private UUID id;
+    private Long id;
 
     private String username;
 
@@ -31,7 +30,7 @@ public class JwtResponse {
 
     private String role;
 
-    public JwtResponse(String token, String refreshToken, UUID id, String username, String email, List<String> authorities, String role) {
+    public JwtResponse(String token, String refreshToken, Long id, String username, String email, List<String> authorities, String role) {
         this.token = token;
         this.refreshToken = refreshToken;
         this.type = "Bearer";

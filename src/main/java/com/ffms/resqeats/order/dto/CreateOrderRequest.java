@@ -13,7 +13,6 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * Create order request DTO.
@@ -28,7 +27,7 @@ public class CreateOrderRequest {
 
     @NotNull(message = "Outlet ID is required")
     @JsonProperty("outlet_id")
-    private UUID outletId;
+    private Long outletId;
 
     @NotEmpty(message = "Order items are required")
     @Valid  // LOW FIX: Enables validation of nested OrderItemRequest objects
@@ -46,7 +45,7 @@ public class CreateOrderRequest {
     public static class OrderItemRequest {
         @NotNull(message = "Item ID is required")
         @JsonProperty("item_id")
-        private UUID itemId;
+        private Long itemId;
 
         @NotNull(message = "Quantity is required")
         @Positive(message = "Quantity must be positive")

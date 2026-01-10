@@ -18,9 +18,9 @@ import java.util.List;
  * 
  * SCOPE FILTERING:
  * - ADMIN/SUPER_ADMIN: No automatic scope filtering (full access)
- * - MERCHANT: Automatically scoped to merchant's items
+ * - MERCHANT_USER: Automatically scoped to merchant's items
  * - OUTLET_USER: Automatically scoped to merchant's items
- * - USER/Anonymous: Only ACTIVE items (public data)
+ * - CUSTOMER_USER/Anonymous: Only ACTIVE items (public data)
  */
 public class ItemSpecification {
 
@@ -41,16 +41,16 @@ public class ItemSpecification {
                 // Anonymous users - only ACTIVE items
                 predicates.add(criteriaBuilder.equal(root.get("status"), ItemStatus.ACTIVE));
             } else if (!context.hasGlobalAccess()) {
-                // MERCHANT - scope to merchant's items
-                if (context.getRole() == UserRole.MERCHANT && context.getMerchantId() != null) {
+                // MERCHANT_USER - scope to merchant's items
+                if (context.getRole() == UserRole.MERCHANT_USER && context.getMerchantId() != null) {
                     predicates.add(criteriaBuilder.equal(root.get("merchantId"), context.getMerchantId()));
                 }
                 // OUTLET_USER - scope to merchant's items (read access)
                 else if (context.getRole() == UserRole.OUTLET_USER && context.getMerchantId() != null) {
                     predicates.add(criteriaBuilder.equal(root.get("merchantId"), context.getMerchantId()));
                 }
-                // USER - only ACTIVE items (public data)
-                else if (context.getRole() == UserRole.USER) {
+                // CUSTOMER_USER - only ACTIVE items (public data)
+                else if (context.getRole() == UserRole.CUSTOMER_USER) {
                     predicates.add(criteriaBuilder.equal(root.get("status"), ItemStatus.ACTIVE));
                 }
             }

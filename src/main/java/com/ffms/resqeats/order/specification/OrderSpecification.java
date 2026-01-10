@@ -17,9 +17,9 @@ import java.util.List;
  * 
  * SCOPE FILTERING:
  * - ADMIN/SUPER_ADMIN: No automatic scope filtering (full access)
- * - MERCHANT: Automatically scoped to merchant's orders
+ * - MERCHANT_USER: Automatically scoped to merchant's orders
  * - OUTLET_USER: Automatically scoped to outlet's orders
- * - USER: Automatically scoped to user's own orders
+ * - CUSTOMER_USER: Automatically scoped to user's own orders
  */
 public class OrderSpecification {
 
@@ -37,16 +37,16 @@ public class OrderSpecification {
             ResqeatsSecurityContext context = SecurityContextHolder.getContext();
             
             if (!context.isAnonymous() && !context.hasGlobalAccess()) {
-                // MERCHANT - scope to merchant's orders
-                if (context.getRole() == UserRole.MERCHANT && context.getMerchantId() != null) {
+                // MERCHANT_USER - scope to merchant's orders
+                if (context.getRole() == UserRole.MERCHANT_USER && context.getMerchantId() != null) {
                     predicates.add(criteriaBuilder.equal(root.get("merchantId"), context.getMerchantId()));
                 }
                 // OUTLET_USER - scope to outlet's orders
                 else if (context.getRole() == UserRole.OUTLET_USER && context.getOutletId() != null) {
                     predicates.add(criteriaBuilder.equal(root.get("outletId"), context.getOutletId()));
                 }
-                // USER - scope to own orders only
-                else if (context.getRole() == UserRole.USER && context.getUserId() != null) {
+                // CUSTOMER_USER - scope to own orders only
+                else if (context.getRole() == UserRole.CUSTOMER_USER && context.getUserId() != null) {
                     predicates.add(criteriaBuilder.equal(root.get("userId"), context.getUserId()));
                 }
             }
