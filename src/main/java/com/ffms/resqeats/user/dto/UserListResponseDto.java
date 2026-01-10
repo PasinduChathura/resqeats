@@ -71,6 +71,12 @@ public class UserListResponseDto {
         @JsonProperty("merchant_logo_url")
         private String merchantLogoUrl;
 
+        /**
+         * Merchant address (typically derived from the user's associated outlet when available).
+         */
+        @JsonProperty("merchant_address")
+        private String merchantAddress;
+
         @JsonProperty("merchant_contact_email")
         private String merchantContactEmail;
 

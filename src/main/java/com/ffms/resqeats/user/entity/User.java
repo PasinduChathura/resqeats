@@ -3,6 +3,8 @@ package com.ffms.resqeats.user.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ffms.resqeats.common.entity.BaseEntity;
+import com.ffms.resqeats.merchant.entity.Merchant;
+import com.ffms.resqeats.outlet.entity.Outlet;
 import com.ffms.resqeats.user.enums.UserRole;
 import com.ffms.resqeats.user.enums.UserStatus;
 import jakarta.persistence.*;
@@ -93,12 +95,30 @@ public class User extends BaseEntity {
     private UUID merchantId;
 
     /**
+     * Read-only association for efficient joins.
+     * Backed by the same merchant_id column.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "merchant_id", referencedColumnName = "id", insertable = false, updatable = false)
+    @JsonIgnore
+    private Merchant merchant;
+
+    /**
      * Associated outlet for OUTLET_USER role users.
      * Per SRS: OUTLET_USER can only access their assigned outlet.
      */
     @Column(name = "outlet_id")
     @JsonProperty("outlet_id")
     private UUID outletId;
+
+    /**
+     * Read-only association for efficient joins.
+     * Backed by the same outlet_id column.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "outlet_id", referencedColumnName = "id", insertable = false, updatable = false)
+    @JsonIgnore
+    private Outlet outlet;
 
     // OAuth2 fields
     @Column(name = "oauth2_provider", length = 30)

@@ -287,7 +287,7 @@ public class UserService {
      * @return the user list response DTO
      */
     private UserListResponseDto toListDto(User user) {
-        return UserListResponseDto.builder()
+        UserListResponseDto.UserListResponseDtoBuilder builder = UserListResponseDto.builder()
                 .id(user.getId())
                 .email(user.getEmail())
                 .phone(user.getPhone())
@@ -299,6 +299,36 @@ public class UserService {
                 .emailVerified(user.getEmailVerified())
                 .phoneVerified(user.getPhoneVerified())
                 .createdAt(user.getCreatedAt())
-                .build();
+            ;
+
+        // MERCHANT role association (joined via EntityGraph)
+        if (user.getRole() == UserRole.MERCHANT && user.getMerchantId() != null) {
+            var merchant = user.getMerchant();
+            builder.merchantAssociation(UserListResponseDto.MerchantAssociation.builder()
+                .merchantId(user.getMerchantId())
+                .merchantName(merchant != null ? merchant.getName() : null)
+                .merchantLogoUrl(merchant != null ? merchant.getLogoUrl() : null)
+                // Address isn't stored on Merchant; use user's associated outlet address when available.
+                .merchantAddress(user.getOutlet() != null ? user.getOutlet().getAddress() : null)
+                .merchantContactEmail(merchant != null ? merchant.getContactEmail() : null)
+                .merchantContactPhone(merchant != null ? merchant.getContactPhone() : null)
+                .build());
+        }
+
+        // OUTLET_USER role association (joined via EntityGraph)
+        if (user.getRole() == UserRole.OUTLET_USER && user.getOutletId() != null) {
+            var outlet = user.getOutlet();
+            var merchant = user.getMerchant();
+            builder.outletAssociation(UserListResponseDto.OutletAssociation.builder()
+                .outletId(user.getOutletId())
+                .outletName(outlet != null ? outlet.getName() : null)
+                .outletAddress(outlet != null ? outlet.getAddress() : null)
+                .outletCity(outlet != null ? outlet.getCity() : null)
+                .merchantId(user.getMerchantId())
+                .merchantName(merchant != null ? merchant.getName() : null)
+                .build());
+        }
+
+        return builder.build();
     }
 }

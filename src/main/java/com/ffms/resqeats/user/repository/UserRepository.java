@@ -7,10 +7,12 @@ import com.ffms.resqeats.user.enums.UserStatus;
 import com.ffms.resqeats.security.context.SecurityContextHolder;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
 import java.util.Optional;
@@ -27,6 +29,9 @@ import java.util.UUID;
  */
 @Repository
 public interface UserRepository extends BaseScopedRepository<User>, JpaSpecificationExecutor<User> {
+
+    @EntityGraph(attributePaths = {"merchant", "outlet"})
+    Page<User> findAll(Specification<User> spec, Pageable pageable);
 
     @Override
     default void validateScope(User entity) {
