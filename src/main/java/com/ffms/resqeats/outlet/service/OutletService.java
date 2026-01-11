@@ -2,23 +2,26 @@ package com.ffms.resqeats.outlet.service;
 
 import com.ffms.resqeats.common.exception.BusinessException;
 import com.ffms.resqeats.geo.service.GeoService;
+import com.ffms.resqeats.item.repository.OutletItemRepository;
 import com.ffms.resqeats.merchant.entity.Merchant;
 import com.ffms.resqeats.merchant.enums.MerchantStatus;
 import com.ffms.resqeats.merchant.repository.MerchantRepository;
 import com.ffms.resqeats.outlet.dto.CreateOutletRequest;
-import com.ffms.resqeats.outlet.dto.OutletDto;
 import com.ffms.resqeats.outlet.dto.OutletFilterDto;
-import com.ffms.resqeats.outlet.dto.OutletListResponseDto;
 import com.ffms.resqeats.outlet.dto.UpdateOutletRequest;
+import com.ffms.resqeats.outlet.dto.admin.*;
+import com.ffms.resqeats.outlet.dto.common.OperatingHoursDto;
+import com.ffms.resqeats.outlet.dto.customer.OutletCustomerDTO;
+import com.ffms.resqeats.outlet.dto.merchant.OutletMerchantDetailDTO;
+import com.ffms.resqeats.outlet.dto.merchant.OutletMerchantListDTO;
 import com.ffms.resqeats.outlet.entity.Outlet;
 import com.ffms.resqeats.outlet.entity.OutletHours;
 import com.ffms.resqeats.outlet.enums.OutletStatus;
 import com.ffms.resqeats.outlet.repository.OutletHoursRepository;
 import com.ffms.resqeats.outlet.repository.OutletRepository;
 import com.ffms.resqeats.outlet.specification.OutletSpecification;
-import com.ffms.resqeats.user.entity.User;
+import com.ffms.resqeats.security.context.SecurityContextHolder;
 import com.ffms.resqeats.user.enums.UserRole;
-import com.ffms.resqeats.user.repository.UserRepository;
 import com.ffms.resqeats.websocket.service.WebSocketService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,10 +30,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Service for managing outlet operations and lifecycle.
@@ -42,6 +47,7 @@ import java.util.stream.Collectors;
  * <p>Business Rules:</p>
  * <ul>
  *   <li>BR-018: Merchant must be approved before creating outlets</li>
+ *   <li>BR-019: ADMIN can create outlets for any merchant, MERCHANT only for their own</li>
  *   <li>BR-020: Outlet can only be managed by merchant owner or outlet staff</li>
  *   <li>BR-021: Operating hours must be set before outlet goes active</li>
  * </ul>
@@ -58,50 +64,34 @@ public class OutletService {
     private final OutletRepository outletRepository;
     private final OutletHoursRepository outletHoursRepository;
     private final MerchantRepository merchantRepository;
-    private final UserRepository userRepository;
+    private final OutletItemRepository outletItemRepository;
     private final GeoService geoService;
     private final WebSocketService webSocketService;
 
+    // =====================
+    // Admin Commands
+    // =====================
+
     /**
-     * Creates a new outlet for a merchant.
+     * Creates an outlet for any merchant (Admin only).
      *
-     * <p>Creates an outlet with PENDING_APPROVAL status. Operating hours can be
-     * optionally provided during creation. The outlet is automatically added to
-     * the geo-location index for proximity searches.</p>
-     *
-     * @param merchantId the unique identifier of the merchant
-     * @param request the outlet creation request containing outlet details
-     * @param userId the unique identifier of the user performing the operation
-     * @return the created outlet as a DTO
-     * @throws BusinessException with code MERCH_004 if merchant is not found
-     * @throws BusinessException with code OUTLET_001 if merchant is not approved (BR-018)
-     * @throws BusinessException with code AUTH_003 if user is not authorized
+     * @param request the admin create outlet request
+     * @return the created outlet DTO
      */
     @Transactional
-    public OutletDto createOutlet(Long merchantId, CreateOutletRequest request, Long userId) {
-        log.info("Creating outlet for merchant: {} by user: {}", merchantId, userId);
-        log.debug("Outlet creation request details - name: {}, city: {}", request.getName(), request.getCity());
+    public OutletAdminDetailDTO createOutletAdmin(AdminCreateOutletRequest request) {
+        var context = SecurityContextHolder.getContext();
+        log.info("Admin creating outlet for merchant: {} by admin: {}", request.getMerchantId(), context.getUserId());
 
-        Merchant merchant = merchantRepository.findById(merchantId)
-                .orElseThrow(() -> {
-                    log.error("Merchant not found with ID: {}", merchantId);
-                    return new BusinessException("MERCH_004", "Merchant not found");
-                });
+        Merchant merchant = merchantRepository.findById(request.getMerchantId())
+                .orElseThrow(() -> new BusinessException("MERCH_004", "Merchant not found"));
 
         if (merchant.getStatus() != MerchantStatus.APPROVED) {
-            log.warn("Attempt to create outlet for non-approved merchant: {} with status: {}", 
-                    merchantId, merchant.getStatus());
             throw new BusinessException("OUTLET_001", "Merchant must be approved before creating outlets");
         }
 
-        if (!merchant.getOwnerUserId().equals(userId)) {
-            log.warn("Unauthorized outlet creation attempt - user: {} for merchant: {} owned by: {}", 
-                    userId, merchantId, merchant.getOwnerUserId());
-            throw new BusinessException("AUTH_003", "Not authorized to create outlets for this merchant");
-        }
-
         Outlet outlet = Outlet.builder()
-                .merchantId(merchantId)
+                .merchantId(request.getMerchantId())
                 .name(request.getName())
                 .description(request.getDescription())
                 .address(request.getAddress())
@@ -112,19 +102,16 @@ public class OutletService {
                 .phone(request.getPhone())
                 .email(request.getEmail())
                 .imageUrl(request.getImageUrl())
-                .status(OutletStatus.PENDING_APPROVAL)
+                .status(OutletStatus.PENDING)
                 .build();
 
         outlet = outletRepository.save(outlet);
-        log.debug("Outlet entity saved with ID: {}", outlet.getId());
 
         if (request.getOperatingHours() != null) {
-            log.debug("Creating {} operating hours entries for outlet: {}", 
-                    request.getOperatingHours().size(), outlet.getId());
-            for (CreateOutletRequest.OperatingHoursRequest hours : request.getOperatingHours()) {
+            for (OperatingHoursDto hours : request.getOperatingHours()) {
                 OutletHours outletHours = OutletHours.builder()
                         .outletId(outlet.getId())
-                        .dayOfWeek(hours.getDayOfWeek())
+                        .dayOfWeek(mapDayOfWeek(hours.getDayOfWeek()))
                         .openTime(hours.getOpenTime())
                         .closeTime(hours.getCloseTime())
                         .isClosed(hours.getIsClosed() != null ? hours.getIsClosed() : false)
@@ -134,12 +121,287 @@ public class OutletService {
         }
 
         geoService.addOutletToGeoIndex(outlet);
-        log.debug("Outlet added to geo index at coordinates: [{}, {}]", 
-                outlet.getLatitude(), outlet.getLongitude());
+        log.info("Admin created outlet: {} for merchant: {}", outlet.getId(), request.getMerchantId());
+        return toDtoAdminDetail(outlet);
+    }
 
-        log.info("Outlet created successfully - outletId: {}, merchantId: {}, name: {}", 
-                outlet.getId(), merchantId, outlet.getName());
-        return toDto(outlet);
+    /**
+     * Updates an outlet (Admin only - no ownership check).
+     */
+    @Transactional
+    public OutletAdminDetailDTO updateOutletAdmin(Long outletId, AdminUpdateOutletRequest request) {
+        var context = SecurityContextHolder.getContext();
+        log.info("Admin updating outlet: {} by admin: {}", outletId, context.getUserId());
+        Outlet outlet = getOutletOrThrow(outletId);
+
+        applyOutletUpdates(outlet, request);
+        outlet = outletRepository.save(outlet);
+        log.info("Admin updated outlet: {}", outletId);
+        return toDtoAdminDetail(outlet);
+    }
+
+    /**
+     * Approves an outlet (Admin only).
+     */
+    @Transactional
+    public OutletAdminDetailDTO approveOutlet(Long outletId) {
+        var context = SecurityContextHolder.getContext();
+        log.info("Admin approving outlet: {} by admin: {}", outletId, context.getUserId());
+        Outlet outlet = getOutletOrThrow(outletId);
+
+        if (outlet.getStatus() != OutletStatus.PENDING) {
+            throw new BusinessException("OUTLET_005", "Outlet is not pending approval");
+        }
+
+        outlet.setStatus(OutletStatus.ACTIVE);
+        outlet = outletRepository.save(outlet);
+        log.info("Outlet approved: {}", outletId);
+        return toDtoAdminDetail(outlet);
+    }
+
+    /**
+     * Suspends an outlet (Admin only).
+     */
+    @Transactional
+    public OutletAdminDetailDTO suspendOutlet(Long outletId, String reason) {
+        var context = SecurityContextHolder.getContext();
+        log.info("Admin suspending outlet: {} by admin: {}", outletId, context.getUserId());
+        Outlet outlet = getOutletOrThrow(outletId);
+
+        outlet.setStatus(OutletStatus.SUSPENDED);
+        outlet = outletRepository.save(outlet);
+
+        webSocketService.broadcastOutletStatusChange(outletId, false);
+        log.info("Outlet suspended: {} - reason: {}", outletId, reason);
+        return toDtoAdminDetail(outlet);
+    }
+
+    /**
+     * Activates an outlet (Admin only - bypasses hours check).
+     */
+    @Transactional
+    public OutletAdminDetailDTO activateOutletAdmin(Long outletId) {
+        var context = SecurityContextHolder.getContext();
+        log.info("Admin activating outlet: {} by admin: {}", outletId, context.getUserId());
+        Outlet outlet = getOutletOrThrow(outletId);
+
+        outlet.setStatus(OutletStatus.ACTIVE);
+        outlet = outletRepository.save(outlet);
+        log.info("Admin activated outlet: {}", outletId);
+        return toDtoAdminDetail(outlet);
+    }
+
+    /**
+     * Deactivates an outlet (Admin only).
+     */
+    @Transactional
+    public OutletAdminDetailDTO deactivateOutletAdmin(Long outletId) {
+        var context = SecurityContextHolder.getContext();
+        log.info("Admin deactivating outlet: {} by admin: {}", outletId, context.getUserId());
+        Outlet outlet = getOutletOrThrow(outletId);
+
+        outlet.setStatus(OutletStatus.INACTIVE);
+        outlet = outletRepository.save(outlet);
+
+        webSocketService.broadcastOutletStatusChange(outletId, false);
+        log.info("Admin deactivated outlet: {}", outletId);
+        return toDtoAdminDetail(outlet);
+    }
+
+    /**
+     * Get outlet full details for merchant.
+     */
+    public OutletMerchantDetailDTO getOutletMerchantDetail(Long outletId) {
+        log.info("Merchant retrieving outlet details: {}", outletId);
+        Outlet outlet = getOutletOrThrow(outletId);
+        validateOutletAccess(outlet);
+        return toDtoMerchantDetail(outlet);
+    }
+
+    /**
+     * Get outlet full details for admin.
+     */
+    public OutletAdminDetailDTO getOutletAdminDetail(Long outletId) {
+        log.info("Admin retrieving outlet details: {}", outletId);
+        Outlet outlet = getOutletOrThrow(outletId);
+        return toDtoAdminDetail(outlet);
+    }
+
+    /**
+     * Deletes an outlet.
+     */
+    @Transactional
+    public void deleteOutlet(Long outletId) {
+        var context = SecurityContextHolder.getContext();
+        log.info("Deleting outlet: {} by user: {}", outletId, context.getUserId());
+        Outlet outlet = getOutletOrThrow(outletId);
+
+        // Admin can delete any outlet, merchant/outlet users can only delete within their scope
+        if (!context.hasGlobalAccess()) {
+            if (context.getRole() == UserRole.MERCHANT_USER) {
+                if (context.getMerchantId() == null || !outlet.getMerchantId().equals(context.getMerchantId())) {
+                    throw new BusinessException("AUTH_003", "Not authorized to delete this outlet");
+                }
+            } else if (context.getRole() == UserRole.OUTLET_USER) {
+                if (context.getOutletId() == null || !outlet.getId().equals(context.getOutletId())) {
+                    throw new BusinessException("AUTH_003", "Not authorized to delete this outlet");
+                }
+            } else {
+                throw new BusinessException("AUTH_003", "Not authorized to delete this outlet");
+            }
+        }
+
+        geoService.removeOutletFromGeoIndex(outletId);
+        outletHoursRepository.deleteByOutletId(outletId);
+        outletRepository.delete(outlet);
+        log.info("Outlet deleted: {}", outletId);
+    }
+
+    /**
+     * Filter outlets for admin (full data).
+     */
+    public Page<OutletAdminListDTO> filterOutletsAdmin(OutletFilterDto filter, Pageable pageable) {
+        log.info("Admin filtering outlets with filter: {}", filter);
+        return outletRepository.findAll(OutletSpecification.filterBy(filter), pageable)
+                .map(this::toAdminListDto);
+    }
+
+    /**
+     * Lookup outlets for dropdown (Admin).
+     */
+    public Stream<OutletLookupDto> lookupOutlets(String query, Long merchantId) {
+        log.info("Admin lookup outlets - query: {}, merchantId: {}", query, merchantId);
+        List<Outlet> outlets = outletRepository.searchOutlets(merchantId, query);
+        return outlets.stream().map(this::toLookupDto);
+    }
+
+    // =====================
+    // Merchant Commands
+    // =====================
+
+    /**
+     * Creates an outlet for the current user's merchant.
+     */
+    @Transactional
+    public OutletMerchantDetailDTO createOutletForCurrentUser(CreateOutletRequest request) {
+        var context = SecurityContextHolder.getContext();
+        log.info("Merchant creating outlet by user: {}", context.getUserId());
+
+        if (context.getMerchantId() == null) {
+            throw new BusinessException("MERCH_004", "User is not assigned to any merchant");
+        }
+
+        Merchant merchant = merchantRepository.findById(context.getMerchantId())
+                .orElseThrow(() -> new BusinessException("MERCH_004", "Merchant not found"));
+
+        if (merchant.getStatus() != MerchantStatus.APPROVED) {
+            throw new BusinessException("OUTLET_001", "Merchant must be approved before creating outlets");
+        }
+
+        Outlet outlet = Outlet.builder()
+                .merchantId(context.getMerchantId())
+                .name(request.getName())
+                .description(request.getDescription())
+                .address(request.getAddress())
+                .city(request.getCity())
+                .postalCode(request.getPostalCode())
+                .latitude(request.getLatitude())
+                .longitude(request.getLongitude())
+                .phone(request.getPhone())
+                .email(request.getEmail())
+                .imageUrl(request.getImageUrl())
+                .status(OutletStatus.PENDING)
+                .build();
+
+        outlet = outletRepository.save(outlet);
+
+        if (request.getOperatingHours() != null) {
+            for (OperatingHoursDto hours : request.getOperatingHours()) {
+                OutletHours outletHours = OutletHours.builder()
+                        .outletId(outlet.getId())
+                        .dayOfWeek(mapDayOfWeek(hours.getDayOfWeek()))
+                        .openTime(hours.getOpenTime())
+                        .closeTime(hours.getCloseTime())
+                        .isClosed(hours.getIsClosed() != null ? hours.getIsClosed() : false)
+                        .build();
+                outletHoursRepository.save(outletHours);
+            }
+        }
+
+        geoService.addOutletToGeoIndex(outlet);
+        log.info("Merchant created outlet: {} for merchant: {}", outlet.getId(), context.getMerchantId());
+        return toDtoMerchantDetail(outlet);
+    }
+
+    /**
+     * Paginated version: Gets outlets for the current user's merchant.
+     */
+    public Page<OutletMerchantListDTO> getOutletsByCurrentUser(Pageable pageable) {
+        var context = SecurityContextHolder.getContext();
+        log.info("Getting paged outlets for user: {} page: {}", context.getUserId(), pageable);
+
+        if (context.getMerchantId() == null) {
+            throw new BusinessException("MERCH_004", "User is not assigned to any merchant");
+        }
+
+        Page<Outlet> page = outletRepository.findByMerchantId(context.getMerchantId(), pageable);
+        return page.map(this::toDtoMerchantList);
+    }
+
+    /**
+     * Lookup outlets for the current user's merchant.
+     */
+    public Stream<OutletLookupDto> lookupOutletsByCurrentUser(String query) {
+        var context = SecurityContextHolder.getContext();
+        log.info("Lookup outlets for user: {}, query: {}", context.getUserId(), query);
+
+        if (context.getMerchantId() == null) {
+            throw new BusinessException("MERCH_004", "User is not assigned to any merchant");
+        }
+
+        List<Outlet> outlets;
+        if (query != null && !query.isBlank()) {
+            outlets = outletRepository.findByMerchantIdAndNameContainingIgnoreCase(context.getMerchantId(), query);
+        } else {
+            outlets = outletRepository.findByMerchantId(context.getMerchantId());
+        }
+
+        return outlets.stream().map(this::toLookupDto);
+    }
+
+    // =====================
+    // Public Queries
+    // =====================
+
+    /**
+     * Gets outlet details for customers (public - limited data).
+     */
+    public OutletCustomerDTO getOutletCustomerById(Long outletId) {
+        log.info("Getting outlet customer view: {}", outletId);
+        Outlet outlet = getOutletOrThrow(outletId);
+
+        // Only return active outlets for public access
+        if (outlet.getStatus() != OutletStatus.ACTIVE) {
+            throw new BusinessException("OUTLET_004", "Outlet not found");
+        }
+
+        return toDtoCustomer(outlet);
+    }
+
+    /**
+     * Search outlets for public (limited data, only active outlets).
+     */
+    public Page<OutletCustomerDTO> searchOutletsPublic(String query, String city, Pageable pageable) {
+        log.info("Public search outlets - query: {}, city: {}", query, city);
+
+        OutletFilterDto filter = OutletFilterDto.builder()
+                .status(OutletStatus.ACTIVE)
+                .search(query)
+                .city(city)
+                .build();
+
+        return outletRepository.findAll(OutletSpecification.filterBy(filter), pageable)
+                .map(this::toDtoCustomer);
     }
 
     /**
@@ -149,18 +411,18 @@ public class OutletService {
      * If geo-coordinates are updated, the outlet's position in the geo-index is also refreshed.</p>
      *
      * @param outletId the unique identifier of the outlet to update
-     * @param request the update request containing fields to modify
-     * @param userId the unique identifier of the user performing the operation
+     * @param request  the update request containing fields to modify
      * @return the updated outlet as a DTO
      * @throws BusinessException with code OUTLET_004 if outlet is not found
      * @throws BusinessException with code AUTH_003 if user is not authorized
      */
     @Transactional
-    public OutletDto updateOutlet(Long outletId, UpdateOutletRequest request, Long userId) {
-        log.info("Updating outlet: {} by user: {}", outletId, userId);
-        
+    public OutletMerchantDetailDTO updateOutlet(Long outletId, UpdateOutletRequest request) {
+        var context = SecurityContextHolder.getContext();
+        log.info("Updating outlet: {} by user: {}", outletId, context.getUserId());
+
         Outlet outlet = getOutletOrThrow(outletId);
-        validateOutletAccess(outlet, userId);
+        validateOutletAccess(outlet);
 
         log.debug("Applying updates to outlet: {}", outletId);
         if (request.getName() != null) outlet.setName(request.getName());
@@ -173,7 +435,7 @@ public class OutletService {
         if (request.getImageUrl() != null) outlet.setImageUrl(request.getImageUrl());
 
         if (request.getLatitude() != null && request.getLongitude() != null) {
-            log.debug("Updating geo-coordinates for outlet: {} to [{}, {}]", 
+            log.debug("Updating geo-coordinates for outlet: {} to [{}, {}]",
                     outletId, request.getLatitude(), request.getLongitude());
             outlet.setLatitude(request.getLatitude());
             outlet.setLongitude(request.getLongitude());
@@ -182,7 +444,7 @@ public class OutletService {
 
         outlet = outletRepository.save(outlet);
         log.info("Outlet updated successfully: {}", outletId);
-        return toDto(outlet);
+        return toDtoMerchantDetail(outlet);
     }
 
     /**
@@ -191,29 +453,28 @@ public class OutletService {
      * <p>Replaces all existing operating hours with the provided schedule.
      * Operating hours must be set before an outlet can be activated per BR-021.</p>
      *
-     * @param outletId the unique identifier of the outlet
+     * @param outletId     the unique identifier of the outlet
      * @param hoursRequest the list of operating hours for each day of the week
-     * @param userId the unique identifier of the user performing the operation
      * @return the updated outlet as a DTO
      * @throws BusinessException with code OUTLET_004 if outlet is not found
      * @throws BusinessException with code AUTH_003 if user is not authorized
      */
     @Transactional
-    public OutletDto setOperatingHours(Long outletId, List<CreateOutletRequest.OperatingHoursRequest> hoursRequest, 
-                                        Long userId) {
-        log.info("Setting operating hours for outlet: {} by user: {}", outletId, userId);
-        
+    public OutletMerchantDetailDTO setOperatingHours(Long outletId, List<OperatingHoursDto> hoursRequest) {
+        var context = SecurityContextHolder.getContext();
+        log.info("Setting operating hours for outlet: {} by user: {}", outletId, context.getUserId());
+
         Outlet outlet = getOutletOrThrow(outletId);
-        validateOutletAccess(outlet, userId);
+        validateOutletAccess(outlet);
 
         log.debug("Deleting existing operating hours for outlet: {}", outletId);
         outletHoursRepository.deleteByOutletId(outletId);
 
         log.debug("Creating {} new operating hours entries for outlet: {}", hoursRequest.size(), outletId);
-        for (CreateOutletRequest.OperatingHoursRequest hours : hoursRequest) {
+        for (OperatingHoursDto hours : hoursRequest) {
             OutletHours outletHours = OutletHours.builder()
                     .outletId(outletId)
-                    .dayOfWeek(hours.getDayOfWeek())
+                    .dayOfWeek(mapDayOfWeek(hours.getDayOfWeek()))
                     .openTime(hours.getOpenTime())
                     .closeTime(hours.getCloseTime())
                     .isClosed(hours.getIsClosed() != null ? hours.getIsClosed() : false)
@@ -222,7 +483,7 @@ public class OutletService {
         }
 
         log.info("Operating hours set successfully for outlet: {}", outletId);
-        return toDto(outlet);
+        return toDtoMerchantDetail(outlet);
     }
 
     /**
@@ -232,18 +493,18 @@ public class OutletService {
      * configured before activation is allowed.</p>
      *
      * @param outletId the unique identifier of the outlet to activate
-     * @param userId the unique identifier of the user performing the operation
      * @return the activated outlet as a DTO
      * @throws BusinessException with code OUTLET_004 if outlet is not found
      * @throws BusinessException with code AUTH_003 if user is not authorized
      * @throws BusinessException with code OUTLET_002 if operating hours are not set
      */
     @Transactional
-    public OutletDto activateOutlet(Long outletId, Long userId) {
-        log.info("Activating outlet: {} by user: {}", outletId, userId);
-        
+    public OutletMerchantDetailDTO activateOutlet(Long outletId) {
+        var context = SecurityContextHolder.getContext();
+        log.info("Activating outlet: {} by user: {}", outletId, context.getUserId());
+
         Outlet outlet = getOutletOrThrow(outletId);
-        validateOutletAccess(outlet, userId);
+        validateOutletAccess(outlet);
 
         List<OutletHours> hours = outletHoursRepository.findByOutletId(outletId);
         if (hours.isEmpty()) {
@@ -255,36 +516,36 @@ public class OutletService {
         outlet = outletRepository.save(outlet);
 
         log.info("Outlet activated successfully: {}", outletId);
-        return toDto(outlet);
+        return toDtoMerchantDetail(outlet);
     }
 
     /**
      * Deactivates an outlet, removing it from customer visibility.
      *
-     * <p>Changes outlet status to DEACTIVATED and broadcasts the status change
+     * <p>Changes outlet status to INACTIVE and broadcasts the status change
      * via WebSocket to notify connected clients.</p>
      *
      * @param outletId the unique identifier of the outlet to deactivate
-     * @param userId the unique identifier of the user performing the operation
      * @return the deactivated outlet as a DTO
      * @throws BusinessException with code OUTLET_004 if outlet is not found
      * @throws BusinessException with code AUTH_003 if user is not authorized
      */
     @Transactional
-    public OutletDto deactivateOutlet(Long outletId, Long userId) {
-        log.info("Deactivating outlet: {} by user: {}", outletId, userId);
-        
-        Outlet outlet = getOutletOrThrow(outletId);
-        validateOutletAccess(outlet, userId);
+    public OutletMerchantDetailDTO deactivateOutlet(Long outletId) {
+        var context = SecurityContextHolder.getContext();
+        log.info("Deactivating outlet: {} by user: {}", outletId, context.getUserId());
 
-        outlet.setStatus(OutletStatus.DEACTIVATED);
+        Outlet outlet = getOutletOrThrow(outletId);
+        validateOutletAccess(outlet);
+
+        outlet.setStatus(OutletStatus.INACTIVE);
         outlet = outletRepository.save(outlet);
 
         webSocketService.broadcastOutletStatusChange(outletId, false);
         log.debug("WebSocket notification sent for outlet deactivation: {}", outletId);
-        
+
         log.info("Outlet deactivated successfully: {}", outletId);
-        return toDto(outlet);
+        return toDtoMerchantDetail(outlet);
     }
 
     /**
@@ -294,26 +555,26 @@ public class OutletService {
      * change via WebSocket. The outlet can be reopened later using {@link #reopenOutlet}.</p>
      *
      * @param outletId the unique identifier of the outlet to temporarily close
-     * @param userId the unique identifier of the user performing the operation
      * @return the temporarily closed outlet as a DTO
      * @throws BusinessException with code OUTLET_004 if outlet is not found
      * @throws BusinessException with code AUTH_003 if user is not authorized
      */
     @Transactional
-    public OutletDto temporarilyCloseOutlet(Long outletId, Long userId) {
-        log.info("Temporarily closing outlet: {} by user: {}", outletId, userId);
-        
+    public OutletMerchantDetailDTO temporarilyCloseOutlet(Long outletId) {
+        var context = SecurityContextHolder.getContext();
+        log.info("Temporarily closing outlet: {} by user: {}", outletId, context.getUserId());
+
         Outlet outlet = getOutletOrThrow(outletId);
-        validateOutletAccess(outlet, userId);
+        validateOutletAccess(outlet);
 
         outlet.setStatus(OutletStatus.TEMPORARILY_CLOSED);
         outlet = outletRepository.save(outlet);
 
         webSocketService.broadcastOutletStatusChange(outletId, false);
         log.debug("WebSocket notification sent for outlet temporary closure: {}", outletId);
-        
+
         log.info("Outlet temporarily closed successfully: {}", outletId);
-        return toDto(outlet);
+        return toDtoMerchantDetail(outlet);
     }
 
     /**
@@ -323,21 +584,21 @@ public class OutletService {
      * the status change via WebSocket to notify connected clients.</p>
      *
      * @param outletId the unique identifier of the outlet to reopen
-     * @param userId the unique identifier of the user performing the operation
      * @return the reopened outlet as a DTO
      * @throws BusinessException with code OUTLET_004 if outlet is not found
      * @throws BusinessException with code AUTH_003 if user is not authorized
      * @throws BusinessException with code OUTLET_003 if outlet is not temporarily closed
      */
     @Transactional
-    public OutletDto reopenOutlet(Long outletId, Long userId) {
-        log.info("Reopening outlet: {} by user: {}", outletId, userId);
-        
+    public OutletMerchantDetailDTO reopenOutlet(Long outletId) {
+        var context = SecurityContextHolder.getContext();
+        log.info("Reopening outlet: {} by user: {}", outletId, context.getUserId());
+
         Outlet outlet = getOutletOrThrow(outletId);
-        validateOutletAccess(outlet, userId);
+        validateOutletAccess(outlet);
 
         if (outlet.getStatus() != OutletStatus.TEMPORARILY_CLOSED) {
-            log.warn("Reopen failed for outlet: {} - current status is {} (expected TEMPORARILY_CLOSED)", 
+            log.warn("Reopen failed for outlet: {} - current status is {} (expected TEMPORARILY_CLOSED)",
                     outletId, outlet.getStatus());
             throw new BusinessException("OUTLET_003", "Outlet is not temporarily closed");
         }
@@ -347,9 +608,9 @@ public class OutletService {
 
         webSocketService.broadcastOutletStatusChange(outletId, true);
         log.debug("WebSocket notification sent for outlet reopen: {}", outletId);
-        
+
         log.info("Outlet reopened successfully: {}", outletId);
-        return toDto(outlet);
+        return toDtoMerchantDetail(outlet);
     }
 
     /**
@@ -363,13 +624,13 @@ public class OutletService {
      */
     public boolean isCurrentlyOpen(Long outletId) {
         log.debug("Checking if outlet is currently open: {}", outletId);
-        
+
         Outlet outlet = outletRepository.findById(outletId).orElse(null);
         if (outlet == null) {
             log.debug("Outlet not found: {}", outletId);
             return false;
         }
-        
+
         if (outlet.getStatus() != OutletStatus.ACTIVE) {
             log.debug("Outlet {} is not active, current status: {}", outletId, outlet.getStatus());
             return false;
@@ -388,41 +649,13 @@ public class OutletService {
         }
 
         boolean isOpen = hours.getOpenTime() != null && hours.getCloseTime() != null &&
-               !currentTime.isBefore(hours.getOpenTime()) && currentTime.isBefore(hours.getCloseTime());
-        
-        log.debug("Outlet {} open status: {} (current time: {}, hours: {}-{})", 
+                !currentTime.isBefore(hours.getOpenTime()) && currentTime.isBefore(hours.getCloseTime());
+
+        log.debug("Outlet {} open status: {} (current time: {}, hours: {}-{})",
                 outletId, isOpen, currentTime, hours.getOpenTime(), hours.getCloseTime());
         return isOpen;
     }
 
-    /**
-     * Retrieves an outlet by its unique identifier.
-     *
-     * @param outletId the unique identifier of the outlet
-     * @return the outlet as a DTO
-     * @throws BusinessException with code OUTLET_004 if outlet is not found
-     */
-    public OutletDto getOutlet(Long outletId) {
-        log.info("Retrieving outlet: {}", outletId);
-        OutletDto outlet = toDto(getOutletOrThrow(outletId));
-        log.debug("Outlet retrieved successfully: {}", outletId);
-        return outlet;
-    }
-
-    /**
-     * Retrieves all outlets belonging to a specific merchant.
-     *
-     * @param merchantId the unique identifier of the merchant
-     * @return a list of outlets as DTOs
-     */
-    public List<OutletDto> getOutletsByMerchant(Long merchantId) {
-        log.info("Retrieving outlets for merchant: {}", merchantId);
-        List<OutletDto> outlets = outletRepository.findByMerchantId(merchantId).stream()
-                .map(this::toDto)
-                .collect(Collectors.toList());
-        log.info("Retrieved {} outlets for merchant: {}", outlets.size(), merchantId);
-        return outlets;
-    }
 
     /**
      * Finds outlets near a specified geographic location.
@@ -430,16 +663,16 @@ public class OutletService {
      * <p>Validates the provided coordinates and radius before performing
      * the geo-spatial search. Returns outlets sorted by distance.</p>
      *
-     * @param latitude the latitude of the search center (-90 to 90)
+     * @param latitude  the latitude of the search center (-90 to 90)
      * @param longitude the longitude of the search center (-180 to 180)
-     * @param radiusKm the search radius in kilometers (0 to 1000), nullable
+     * @param radiusKm  the search radius in kilometers (0 to 1000), nullable
      * @return a list of nearby outlets with distance information
      * @throws BusinessException with code GEO_001 if latitude is invalid
      * @throws BusinessException with code GEO_002 if longitude is invalid
      * @throws BusinessException with code GEO_003 if radius is invalid
      */
     public List<GeoService.NearbyOutlet> getNearbyOutlets(double latitude, double longitude, Double radiusKm) {
-        log.info("Finding nearby outlets at coordinates: [{}, {}] within radius: {} km", 
+        log.info("Finding nearby outlets at coordinates: [{}, {}] within radius: {} km",
                 latitude, longitude, radiusKm);
 
         if (latitude < -90.0 || latitude > 90.0) {
@@ -454,58 +687,12 @@ public class OutletService {
             log.warn("Invalid radius provided: {} km", radiusKm);
             throw new BusinessException("GEO_003", "Invalid radius. Must be between 0 and 1000 km");
         }
-        
+
         List<GeoService.NearbyOutlet> nearbyOutlets = geoService.findNearbyOutlets(latitude, longitude, radiusKm);
         log.info("Found {} nearby outlets at [{}, {}]", nearbyOutlets.size(), latitude, longitude);
         return nearbyOutlets;
     }
 
-    /**
-     * Retrieves all outlets with comprehensive filtering.
-     *
-     * @param filter the filter criteria
-     * @param pageable the pagination parameters
-     * @return a page of filtered outlets as list response DTOs
-     */
-    public Page<OutletListResponseDto> getAllOutlets(OutletFilterDto filter, Pageable pageable) {
-        log.info("Retrieving all outlets with filter: {}, page: {}, size: {}", 
-                filter, pageable.getPageNumber(), pageable.getPageSize());
-        Page<OutletListResponseDto> outlets = outletRepository.findAll(OutletSpecification.filterBy(filter), pageable)
-                .map(this::toListDto);
-        log.info("Retrieved {} outlets", outlets.getTotalElements());
-        return outlets;
-    }
-
-    /**
-     * Retrieves a paginated list of active outlets for customer discovery.
-     *
-     * @param pageable the pagination parameters
-     * @return a page of active outlets as list response DTOs
-     */
-    public Page<OutletListResponseDto> getActiveOutlets(Pageable pageable) {
-        log.info("Retrieving active outlets, page: {}, size: {}", 
-                pageable.getPageNumber(), pageable.getPageSize());
-        Page<OutletListResponseDto> outlets = outletRepository.findByStatus(OutletStatus.ACTIVE, pageable)
-                .map(this::toListDto);
-        log.info("Retrieved {} active outlets (total: {})", 
-                outlets.getNumberOfElements(), outlets.getTotalElements());
-        return outlets;
-    }
-
-    /**
-     * Searches outlets by name using a case-insensitive partial match.
-     *
-     * @param query the search query string
-     * @param pageable the pagination parameters
-     * @return a page of matching outlets as list response DTOs
-     */
-    public Page<OutletListResponseDto> searchOutlets(String query, Pageable pageable) {
-        log.info("Searching outlets with query: '{}', page: {}, size: {}", 
-                query, pageable.getPageNumber(), pageable.getPageSize());
-        Page<OutletListResponseDto> results = outletRepository.findByNameContainingIgnoreCase(query, pageable).map(this::toListDto);
-        log.info("Search completed - found {} results for query: '{}'", results.getTotalElements(), query);
-        return results;
-    }
 
     /**
      * Retrieves an outlet entity by ID or throws an exception if not found.
@@ -533,105 +720,175 @@ public class OutletService {
      * </ul>
      *
      * @param outlet the outlet to validate access for
-     * @param userId the unique identifier of the user requesting access
      * @throws BusinessException with code AUTH_003 if user is not authorized
      */
-    private void validateOutletAccess(Outlet outlet, Long userId) {
-        log.debug("Validating outlet access for user: {} on outlet: {}", userId, outlet.getId());
-        
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> {
-                    log.error("User not found with ID: {}", userId);
-                    return new BusinessException("AUTH_003", "User not found");
-                });
+    private void validateOutletAccess(Outlet outlet) {
+        var context = SecurityContextHolder.getContext();
+        log.debug("Validating outlet access for user: {} on outlet: {}", context.getUserId(), outlet.getId());
 
-        if (user.getRole() == UserRole.ADMIN) {
-            log.debug("Admin access granted for user: {}", userId);
+        if (context.hasGlobalAccess() || context.isAdmin()) {
             return;
         }
 
-        Merchant merchant = merchantRepository.findById(outlet.getMerchantId()).orElse(null);
-        if (merchant != null && merchant.getOwnerUserId().equals(userId)) {
-            log.debug("Merchant owner access granted for user: {}", userId);
-            return;
+        if (context.getRole() == UserRole.MERCHANT_USER) {
+            if (context.getMerchantId() != null && outlet.getMerchantId().equals(context.getMerchantId())) {
+                return;
+            }
         }
 
-        if (user.getRole() == UserRole.OUTLET_USER && outlet.getId().equals(user.getOutletId())) {
-            log.debug("Outlet user access granted for user: {}", userId);
-            return;
+        if (context.getRole() == UserRole.OUTLET_USER) {
+            if (context.getOutletId() != null && outlet.getId().equals(context.getOutletId())) {
+                return;
+            }
         }
 
-        log.warn("Access denied for user: {} on outlet: {} - role: {}", userId, outlet.getId(), user.getRole());
         throw new BusinessException("AUTH_003", "Not authorized to manage this outlet");
     }
 
     /**
-     * Converts an Outlet entity to its DTO representation.
-     *
-     * <p>Includes operating hours and calculates current open status.</p>
-     *
-     * @param outlet the outlet entity to convert
-     * @return the outlet as a DTO with all relevant information
+     * Apply updates to outlet from request.
      */
-    private OutletDto toDto(Outlet outlet) {
-        log.debug("Converting outlet entity to DTO: {}", outlet.getId());
-        
-        List<OutletHours> hours = outletHoursRepository.findByOutletId(outlet.getId());
+    private void applyOutletUpdates(Outlet outlet, AdminUpdateOutletRequest request) {
+        if (request.getName() != null) outlet.setName(request.getName());
+        if (request.getDescription() != null) outlet.setDescription(request.getDescription());
+        if (request.getAddress() != null) outlet.setAddress(request.getAddress());
+        if (request.getCity() != null) outlet.setCity(request.getCity());
+        if (request.getPostalCode() != null) outlet.setPostalCode(request.getPostalCode());
+        if (request.getPhone() != null) outlet.setPhone(request.getPhone());
+        if (request.getEmail() != null) outlet.setEmail(request.getEmail());
+        if (request.getImageUrl() != null) outlet.setImageUrl(request.getImageUrl());
 
-        return OutletDto.builder()
+        if (request.getLatitude() != null && request.getLongitude() != null) {
+            outlet.setLatitude(request.getLatitude());
+            outlet.setLongitude(request.getLongitude());
+            geoService.addOutletToGeoIndex(outlet);
+        }
+    }
+
+    /**
+     * Map `java.time.DayOfWeek` (MONDAY..SUNDAY) to stored integer 0=Sunday..6=Saturday
+     */
+    private Integer mapDayOfWeek(DayOfWeek dow) {
+        if (dow == null) return null;
+        // DayOfWeek.getValue(): 1=Monday .. 7=Sunday. Map Sunday(7)->0, others keep value.
+        return dow.getValue() % 7;
+    }
+
+    private List<OperatingHoursDto> toOperatingHoursDtos(Long outletId) {
+        List<OutletHours> hours = outletHoursRepository.findByOutletId(outletId);
+        return hours.stream()
+                .map(h -> OperatingHoursDto.builder()
+                        .dayOfWeek(mapIntToDayOfWeek(h.getDayOfWeek()))
+                        .openTime(h.getOpenTime())
+                        .closeTime(h.getCloseTime())
+                        .isClosed(h.getIsClosed())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Map stored integer 0=Sunday..6=Saturday back to java.time.DayOfWeek
+     */
+    private DayOfWeek mapIntToDayOfWeek(Integer stored) {
+        if (stored == null) return null;
+        if (stored == 0) return DayOfWeek.SUNDAY;
+        return DayOfWeek.of(stored);
+    }
+
+    private long getItemCount(Long outletId) {
+        return outletItemRepository.countByOutletId(outletId);
+    }
+
+    private OutletAdminListDTO toAdminListDto(Outlet outlet) {
+        Merchant merchant = merchantRepository.findById(outlet.getMerchantId()).orElse(null);
+        return OutletAdminListDTO.builder()
                 .id(outlet.getId())
-                .merchantId(outlet.getMerchantId())
+                .name(outlet.getName())
+                .phone(outlet.getPhone())
+                .merchantName(merchant != null ? merchant.getName() : null)
+                .merchantLogoUrl(merchant != null ? merchant.getLogoUrl() : null)
+                .status(outlet.getStatus())
+                .address(outlet.getAddress())
+                .itemCount(getItemCount(outlet.getId()))
+                .isOpen(isCurrentlyOpen(outlet.getId()))
+                .averageRating(outlet.getAverageRating())
+                .build();
+    }
+
+    private OutletAdminDetailDTO toDtoAdminDetail(Outlet outlet) {
+        return OutletAdminDetailDTO.builder()
+                .id(outlet.getId())
                 .name(outlet.getName())
                 .description(outlet.getDescription())
                 .address(outlet.getAddress())
                 .city(outlet.getCity())
-                .postalCode(outlet.getPostalCode())
                 .latitude(outlet.getLatitude())
                 .longitude(outlet.getLongitude())
                 .phone(outlet.getPhone())
-                .email(outlet.getEmail())
-                .imageUrl(outlet.getImageUrl())
                 .status(outlet.getStatus())
+                .merchantId(outlet.getMerchantId())
+                .postalCode(outlet.getPostalCode())
                 .isOpen(isCurrentlyOpen(outlet.getId()))
                 .averageRating(outlet.getAverageRating())
                 .totalRatings(outlet.getTotalRatings())
-                .operatingHours(hours.stream()
-                        .map(h -> OutletDto.OperatingHoursDto.builder()
-                                .dayOfWeek(h.getDayOfWeek())
-                                .openTime(h.getOpenTime())
-                                .closeTime(h.getCloseTime())
-                                .isClosed(h.getIsClosed())
-                                .build())
-                        .collect(Collectors.toList()))
-                .createdAt(outlet.getCreatedAt())
+                .operatingHours(toOperatingHoursDtos(outlet.getId()))
+                .build();
+    }
+
+    private OutletMerchantListDTO toDtoMerchantList(Outlet outlet) {
+        return OutletMerchantListDTO.builder()
+                .id(outlet.getId())
+                .name(outlet.getName())
+                .phone(outlet.getPhone())
+                .status(outlet.getStatus())
+                .address(outlet.getAddress())
+                .itemCount(getItemCount(outlet.getId()))
+                .isOpen(isCurrentlyOpen(outlet.getId()))
+                .averageRating(outlet.getAverageRating())
+                .build();
+    }
+
+    private OutletMerchantDetailDTO toDtoMerchantDetail(Outlet outlet) {
+        return OutletMerchantDetailDTO.builder()
+                .id(outlet.getId())
+                .name(outlet.getName())
+                .description(outlet.getDescription())
+                .address(outlet.getAddress())
+                .city(outlet.getCity())
+                .latitude(outlet.getLatitude())
+                .longitude(outlet.getLongitude())
+                .phone(outlet.getPhone())
+                .status(outlet.getStatus())
+                .postalCode(outlet.getPostalCode())
+                .isOpen(isCurrentlyOpen(outlet.getId()))
+                .averageRating(outlet.getAverageRating())
+                .totalRatings(outlet.getTotalRatings())
+                .operatingHours(toOperatingHoursDtos(outlet.getId()))
+                .build();
+    }
+
+    private OutletCustomerDTO toDtoCustomer(Outlet outlet) {
+        Merchant merchant = merchantRepository.findById(outlet.getMerchantId()).orElse(null);
+        return OutletCustomerDTO.builder()
+                .name(outlet.getName())
+                .phone(outlet.getPhone())
+                .address(outlet.getAddress())
+                .merchantName(merchant != null ? merchant.getName() : null)
+                .merchantLogoUrl(merchant != null ? merchant.getLogoUrl() : null)
+                .isOpen(isCurrentlyOpen(outlet.getId()))
+                .averageRating(outlet.getAverageRating())
                 .build();
     }
 
     /**
-     * Converts an Outlet entity to its list response DTO representation.
-     *
-     * @param outlet the outlet entity to convert
-     * @return the outlet as a list response DTO
+     * Converts an Outlet entity to its lookup DTO representation.
      */
-    private OutletListResponseDto toListDto(Outlet outlet) {
-        log.debug("Converting outlet entity to list DTO: {}", outlet.getId());
-        
-        return OutletListResponseDto.builder()
+    private OutletLookupDto toLookupDto(Outlet outlet) {
+        log.debug("Converting outlet entity to lookup DTO: {}", outlet.getId());
+        return OutletLookupDto.builder()
                 .id(outlet.getId())
-                .merchantId(outlet.getMerchantId())
                 .name(outlet.getName())
-                .address(outlet.getAddress())
-                .city(outlet.getCity())
-                .postalCode(outlet.getPostalCode())
-                .latitude(outlet.getLatitude())
-                .longitude(outlet.getLongitude())
-                .phone(outlet.getPhone())
-                .imageUrl(outlet.getImageUrl())
-                .status(outlet.getStatus())
-                .isOpen(isCurrentlyOpen(outlet.getId()))
-                .averageRating(outlet.getAverageRating())
-                .totalRatings(outlet.getTotalRatings())
-                .createdAt(outlet.getCreatedAt())
                 .build();
     }
+
 }

@@ -1,4 +1,4 @@
-package com.ffms.resqeats.user.dto;
+package com.ffms.resqeats.user.dto.admin;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ffms.resqeats.user.enums.UserRole;
@@ -11,13 +11,14 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 /**
- * User response DTO.
+ * Full user DTO for admin operations.
+ * Contains all user fields including sensitive admin-only information.
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserDto {
+public class UserAdminDto {
 
     private Long id;
 
@@ -44,20 +45,33 @@ public class UserDto {
     @JsonProperty("phone_verified")
     private Boolean phoneVerified;
 
+    @JsonProperty("merchant_id")
+    private Long merchantId;
+
+    @JsonProperty("merchant_name")
+    private String merchantName;
+
+    @JsonProperty("outlet_id")
+    private Long outletId;
+
+    @JsonProperty("outlet_name")
+    private String outletName;
+
+    @JsonProperty("oauth2_provider")
+    private String oauth2Provider;
+
+    @JsonProperty("push_notifications_enabled")
+    private Boolean pushNotificationsEnabled;
+
     @JsonProperty("created_at")
     private LocalDateTime createdAt;
 
-    /**
-     * Association data for MERCHANT_USER role users.
-     * Only populated when user role is MERCHANT_USER.
-     */
-    @JsonProperty("merchant_association")
-    private MerchantAssociation merchantAssociation;
+    @JsonProperty("updated_at")
+    private LocalDateTime updatedAt;
 
-    /**
-     * Association data for OUTLET_USER role users.
-     * Only populated when user role is OUTLET_USER.
-     */
-    @JsonProperty("outlet_association")
-    private OutletAssociation outletAssociation;
+    @JsonProperty("created_by")
+    private String createdBy;
+
+    @JsonProperty("updated_by")
+    private String updatedBy;
 }

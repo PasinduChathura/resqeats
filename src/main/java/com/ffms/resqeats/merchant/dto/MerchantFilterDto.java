@@ -3,28 +3,22 @@ package com.ffms.resqeats.merchant.dto;
 import com.ffms.resqeats.merchant.enums.MerchantCategory;
 import com.ffms.resqeats.merchant.enums.MerchantStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
-
-/**
- * Filter DTO for merchant list queries.
- * Supports comprehensive filtering for admin merchant management.
- */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "Merchant filter criteria")
 public class MerchantFilterDto {
 
     @Schema(description = "Filter by merchant status (PENDING, APPROVED, SUSPENDED, REJECTED)")
     private MerchantStatus status;
 
-    @Schema(description = "Filter by merchant category (RESTAURANT, BAKERY, CAFE, GROCERY, OTHER)")
+    @Schema(description = "Filter by merchant category")
     private MerchantCategory category;
 
     @Schema(description = "Search in name, legal name, or description")

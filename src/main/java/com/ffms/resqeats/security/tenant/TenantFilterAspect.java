@@ -40,7 +40,7 @@ public class TenantFilterAspect {
     // ===== MERCHANT SCOPED FILTERS =====
     public static final String OUTLET_MERCHANT_FILTER = "outletMerchantFilter";
     public static final String ITEM_MERCHANT_FILTER = "itemMerchantFilter";
-    public static final String MERCHANT_OWNER_FILTER = "merchantOwnerFilter";
+    public static final String MERCHANT_ID_FILTER = "merchantIdFilter";
     
     // ===== OUTLET SCOPED FILTERS =====
     public static final String ORDER_OUTLET_FILTER = "orderOutletFilter";
@@ -102,7 +102,7 @@ public class TenantFilterAspect {
         UserRole role = context.getRole();
         Long userId = context.getUserId();
         
-        // MERCHANT_USER - filter by merchant_id for outlets/items, owner for merchants
+        // MERCHANT_USER - filter by merchant_id for outlets/items/merchants
         if (role == UserRole.MERCHANT_USER && context.getMerchantId() != null) {
             Long merchantId = context.getMerchantId();
             
@@ -115,12 +115,10 @@ public class TenantFilterAspect {
             // User filter - see only users within merchant
             enableFilter(session, USER_MERCHANT_FILTER, "merchantId", merchantId);
             
-            // Merchant filter - see only owned merchant
-            if (userId != null) {
-                enableFilter(session, MERCHANT_OWNER_FILTER, "ownerUserId", userId);
-            }
+            // Merchant filter - see only their assigned merchant
+            enableFilter(session, MERCHANT_ID_FILTER, "merchantId", merchantId);
             
-            log.trace("Merchant filters enabled. MerchantId: {}, UserId: {}", merchantId, userId);
+            log.trace("Merchant filters enabled. MerchantId: {}", merchantId);
         }
 
         // OUTLET_USER - filter by outlet_id
@@ -187,7 +185,7 @@ public class TenantFilterAspect {
             // Merchant scoped
             OUTLET_MERCHANT_FILTER,
             ITEM_MERCHANT_FILTER,
-            MERCHANT_OWNER_FILTER,
+            MERCHANT_ID_FILTER,
             // Outlet scoped
             ORDER_OUTLET_FILTER,
             OUTLET_ITEM_OUTLET_FILTER,

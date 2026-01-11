@@ -96,45 +96,6 @@ public class AuthService {
     }
 
     /**
-     * Registers a new user account.
-     *
-     * @param request the registration request with user details
-     * @return authentication response with tokens for the new user
-     * @throws BusinessException if email or phone already exists
-     */
-    @Transactional
-    public AuthResponse register(RegisterRequest request) {
-        log.info("Processing registration request for email: {}", request.getEmail());
-        
-        if (request.getEmail() != null && userRepository.existsByEmail(request.getEmail())) {
-            log.warn("Registration failed - email already exists: {}", request.getEmail());
-            throw new BusinessException("AUTH_001", "Email already registered");
-        }
-        if (request.getPhone() != null && userRepository.existsByPhone(request.getPhone())) {
-            log.warn("Registration failed - phone already exists: {}", request.getPhone());
-            throw new BusinessException("AUTH_001", "Phone number already registered");
-        }
-
-        User user = User.builder()
-                .email(request.getEmail())
-                .phone(request.getPhone())
-                .passwordHash(request.getPassword() != null ?
-                        passwordEncoder.encode(request.getPassword()) : null)
-                .firstName(request.getFirstName())
-                .lastName(request.getLastName())
-            .role(UserRole.CUSTOMER_USER)
-                .status(UserStatus.ACTIVE)
-                .phoneVerified(false)
-                .emailVerified(false)
-                .build();
-
-        user = userRepository.save(user);
-        log.info("User registered successfully - userId: {}, email: {}", user.getId(), user.getEmail());
-
-        return generateAuthResponse(user);
-    }
-
-    /**
      * Requests an OTP code for the specified destination (phone or email).
      *
      * @param request the OTP request containing destination and purpose

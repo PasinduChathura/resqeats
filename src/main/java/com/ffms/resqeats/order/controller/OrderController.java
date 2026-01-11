@@ -9,7 +9,8 @@ import com.ffms.resqeats.order.dto.OrderListResponseDto;
 import com.ffms.resqeats.order.entity.Order;
 import com.ffms.resqeats.order.service.OrderService;
 import com.ffms.resqeats.security.CurrentUser;
-import com.ffms.resqeats.security.UserPrincipal;
+import com.ffms.resqeats.security.CustomUserDetails;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -44,7 +45,7 @@ import org.springframework.web.bind.annotation.*;
  * POST /orders/{orderId}/complete - Complete order (merchant/outlet)
  */
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Orders", description = "Order management APIs")
@@ -60,35 +61,21 @@ public class OrderController {
     @Operation(summary = "Create order (checkout)")
     @PreAuthorize("hasRole('CUSTOMER_USER')")
     public ResponseEntity<ApiResponse<OrderDto>> createOrder(
-            @CurrentUser UserPrincipal currentUser,
+            @CurrentUser CustomUserDetails currentUser,
             @Valid @RequestBody CreateOrderRequest request) {
-        log.info("Create order request for userId: {} - outletId: {}", currentUser.getId(), request.getOutletId());
-        try {
-            Order order = orderService.createOrder(request, currentUser.getId());
-            log.info("Order created successfully: {} for userId: {}", order.getOrderNumber(), currentUser.getId());
-            return ResponseEntity.ok(ApiResponse.success(toDto(order), "Order created successfully"));
-        } catch (Exception e) {
-            log.error("Failed to create order for userId: {} - Error: {}", currentUser.getId(), e.getMessage());
-            throw e;
-        }
+        Order order = orderService.createOrder(request, currentUser.getId());
+        return ResponseEntity.ok(ApiResponse.success(toDto(order), "Order created successfully"));
     }
 
     @PostMapping("/orders/{orderId}/submit")
     @Operation(summary = "Submit order with payment")
     @PreAuthorize("hasRole('CUSTOMER_USER')")
     public ResponseEntity<ApiResponse<OrderDto>> submitOrder(
-            @CurrentUser UserPrincipal currentUser,
+            @CurrentUser CustomUserDetails currentUser,
             @PathVariable Long orderId,
             @Valid @RequestBody SubmitOrderRequest request) {
-        log.info("Submit order request for orderId: {} by userId: {}", orderId, currentUser.getId());
-        try {
-            Order order = orderService.submitOrder(orderId, request.getPaymentMethodId());
-            log.info("Order submitted successfully: {}", order.getOrderNumber());
-            return ResponseEntity.ok(ApiResponse.success(toDto(order), "Order submitted"));
-        } catch (Exception e) {
-            log.error("Failed to submit order: {} - Error: {}", orderId, e.getMessage());
-            throw e;
-        }
+        Order order = orderService.submitOrder(orderId, request.getPaymentMethodId());
+        return ResponseEntity.ok(ApiResponse.success(toDto(order), "Order submitted"));
     }
 
     @GetMapping("/orders")
@@ -97,16 +84,9 @@ public class OrderController {
     public ResponseEntity<ApiResponse<PageResponse<OrderListResponseDto>>> getOrders(
             OrderFilterDto filter,
             Pageable pageable) {
-        log.info("List orders request - filter: {}, page: {}", filter, pageable.getPageNumber());
-        try {
-            Page<Order> orders = orderService.getAllOrders(filter, pageable);
-            PageResponse<OrderListResponseDto> response = PageResponse.from(orders.map(this::toListDto));
-            log.info("Retrieved {} orders", orders.getTotalElements());
-            return ResponseEntity.ok(ApiResponse.success(response));
-        } catch (Exception e) {
-            log.error("Failed to list orders - Error: {}", e.getMessage());
-            throw e;
-        }
+        Page<Order> orders = orderService.getAllOrders(filter, pageable);
+        PageResponse<OrderListResponseDto> response = PageResponse.from(orders.map(this::toListDto));
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @GetMapping("/orders/{orderId}")
@@ -114,36 +94,20 @@ public class OrderController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<OrderDto>> getOrder(
             @PathVariable Long orderId) {
-        log.info("Get order details request for orderId: {}", orderId);
-        try {
-            // Scope validation is handled at repository level via Hibernate filters
-            Order order = orderService.getOrderById(orderId);
-            log.info("Order details retrieved successfully: {}", orderId);
-            return ResponseEntity.ok(ApiResponse.success(toDto(order)));
-        } catch (Exception e) {
-            log.error("Failed to get order: {} - Error: {}", orderId, e.getMessage());
-            throw e;
-        }
+        Order order = orderService.getOrderById(orderId);
+        return ResponseEntity.ok(ApiResponse.success(toDto(order)));
     }
 
     @PostMapping("/orders/{orderId}/cancel")
     @Operation(summary = "Cancel order")
     @PreAuthorize("hasRole('CUSTOMER_USER')")
     public ResponseEntity<ApiResponse<OrderDto>> cancelOrder(
-            @CurrentUser UserPrincipal currentUser,
+            @CurrentUser CustomUserDetails currentUser,
             @PathVariable Long orderId,
             @RequestBody(required = false) CancelOrderRequest request) {
         String reason = request != null ? request.getReason() : "Customer requested cancellation";
-        log.info("Cancel order request for orderId: {} by userId: {} - Reason: {}", orderId, currentUser.getId(), reason);
-        try {
-            // HIGH-002 FIX: Pass userId to enforce ownership check
-            Order order = orderService.cancelOrder(orderId, reason, currentUser.getId());
-            log.info("Order cancelled successfully: {}", orderId);
-            return ResponseEntity.ok(ApiResponse.success(toDto(order), "Order cancelled"));
-        } catch (Exception e) {
-            log.error("Failed to cancel order: {} - Error: {}", orderId, e.getMessage());
-            throw e;
-        }
+        Order order = orderService.cancelOrder(orderId, reason, currentUser.getId());
+        return ResponseEntity.ok(ApiResponse.success(toDto(order), "Order cancelled"));
     }
 
     // =====================
@@ -154,105 +118,63 @@ public class OrderController {
     @Operation(summary = "Accept order")
     @PreAuthorize("hasAnyRole('MERCHANT_USER', 'OUTLET_USER')")
     public ResponseEntity<ApiResponse<OrderDto>> acceptOrder(
-            @CurrentUser UserPrincipal currentUser,
+            @CurrentUser CustomUserDetails currentUser,
             @PathVariable Long orderId,
             @RequestBody(required = false) AcceptOrderRequest request) {
-        log.info("Accept order request for orderId: {} by userId: {}", orderId, currentUser.getId());
-        try {
-            Order order = orderService.acceptOrder(orderId, currentUser.getId());
-            log.info("Order accepted successfully: {}", order.getOrderNumber());
-            return ResponseEntity.ok(ApiResponse.success(toDto(order), "Order accepted"));
-        } catch (Exception e) {
-            log.error("Failed to accept order: {} - Error: {}", orderId, e.getMessage());
-            throw e;
-        }
+        Order order = orderService.acceptOrder(orderId, currentUser.getId());
+        return ResponseEntity.ok(ApiResponse.success(toDto(order), "Order accepted"));
     }
 
     @PostMapping("/orders/{orderId}/decline")
     @Operation(summary = "Decline order")
     @PreAuthorize("hasAnyRole('MERCHANT_USER', 'OUTLET_USER')")
     public ResponseEntity<ApiResponse<OrderDto>> declineOrder(
-            @CurrentUser UserPrincipal currentUser,
+            @CurrentUser CustomUserDetails currentUser,
             @PathVariable Long orderId,
             @Valid @RequestBody DeclineOrderRequest request) {
-        log.info("Decline order request for orderId: {} - Reason: {}", orderId, request.getReason());
-        try {
-            Order order = orderService.declineOrder(orderId, request.getReason(), currentUser.getId());
-            log.info("Order declined: {}", order.getOrderNumber());
-            return ResponseEntity.ok(ApiResponse.success(toDto(order), "Order declined"));
-        } catch (Exception e) {
-            log.error("Failed to decline order: {} - Error: {}", orderId, e.getMessage());
-            throw e;
-        }
+        Order order = orderService.declineOrder(orderId, request.getReason(), currentUser.getId());
+        return ResponseEntity.ok(ApiResponse.success(toDto(order), "Order declined"));
     }
 
     @PostMapping("/orders/{orderId}/preparing")
     @Operation(summary = "Start preparing order")
     @PreAuthorize("hasAnyRole('MERCHANT_USER', 'OUTLET_USER')")
     public ResponseEntity<ApiResponse<OrderDto>> startPreparing(
-            @CurrentUser UserPrincipal currentUser,
+            @CurrentUser CustomUserDetails currentUser,
             @PathVariable Long orderId) {
-        log.info("Start preparing request for orderId: {} by userId: {}", orderId, currentUser.getId());
-        try {
-            Order order = orderService.startPreparing(orderId, currentUser.getId());
-            log.info("Order preparation started: {}", order.getOrderNumber());
-            return ResponseEntity.ok(ApiResponse.success(toDto(order), "Order preparation started"));
-        } catch (Exception e) {
-            log.error("Failed to start preparing order: {} - Error: {}", orderId, e.getMessage());
-            throw e;
-        }
+        Order order = orderService.startPreparing(orderId, currentUser.getId());
+        return ResponseEntity.ok(ApiResponse.success(toDto(order), "Order preparation started"));
     }
 
     @PostMapping("/orders/{orderId}/ready")
     @Operation(summary = "Mark order ready for pickup")
     @PreAuthorize("hasAnyRole('MERCHANT_USER', 'OUTLET_USER')")
     public ResponseEntity<ApiResponse<OrderDto>> markReady(
-            @CurrentUser UserPrincipal currentUser,
+            @CurrentUser CustomUserDetails currentUser,
             @PathVariable Long orderId) {
-        log.info("Mark ready request for orderId: {} by userId: {}", orderId, currentUser.getId());
-        try {
-            Order order = orderService.markReady(orderId, currentUser.getId());
-            log.info("Order marked ready: {}", order.getOrderNumber());
-            return ResponseEntity.ok(ApiResponse.success(toDto(order), "Order marked as ready"));
-        } catch (Exception e) {
-            log.error("Failed to mark order ready: {} - Error: {}", orderId, e.getMessage());
-            throw e;
-        }
+        Order order = orderService.markReady(orderId, currentUser.getId());
+        return ResponseEntity.ok(ApiResponse.success(toDto(order), "Order marked as ready"));
     }
 
     @PostMapping("/orders/{orderId}/verify")
     @Operation(summary = "Verify pickup code")
     @PreAuthorize("hasAnyRole('MERCHANT_USER', 'OUTLET_USER')")
     public ResponseEntity<ApiResponse<OrderDto>> verifyPickupCode(
-            @CurrentUser UserPrincipal currentUser,
+            @CurrentUser CustomUserDetails currentUser,
             @PathVariable Long orderId,
             @Valid @RequestBody VerifyPickupRequest request) {
-        log.info("Verify pickup request for orderId: {}", orderId);
-        try {
-            Order order = orderService.verifyPickup(orderId, request.getPickupCode(), currentUser.getId());
-            log.info("Pickup verified for order: {}", order.getOrderNumber());
-            return ResponseEntity.ok(ApiResponse.success(toDto(order), "Pickup verified"));
-        } catch (Exception e) {
-            log.warn("Pickup verification failed for order: {} - Error: {}", orderId, e.getMessage());
-            throw e;
-        }
+        Order order = orderService.verifyPickup(orderId, request.getPickupCode(), currentUser.getId());
+        return ResponseEntity.ok(ApiResponse.success(toDto(order), "Pickup verified"));
     }
 
     @PostMapping("/orders/{orderId}/complete")
     @Operation(summary = "Complete order")
     @PreAuthorize("hasAnyRole('MERCHANT_USER', 'OUTLET_USER')")
     public ResponseEntity<ApiResponse<OrderDto>> completeOrder(
-            @CurrentUser UserPrincipal currentUser,
+            @CurrentUser CustomUserDetails currentUser,
             @PathVariable Long orderId) {
-        log.info("Complete order request for orderId: {} by userId: {}", orderId, currentUser.getId());
-        try {
-            Order order = orderService.completeOrder(orderId);
-            log.info("Order completed: {}", order.getOrderNumber());
-            return ResponseEntity.ok(ApiResponse.success(toDto(order), "Order completed"));
-        } catch (Exception e) {
-            log.error("Failed to complete order: {} - Error: {}", orderId, e.getMessage());
-            throw e;
-        }
+        Order order = orderService.completeOrder(orderId);
+        return ResponseEntity.ok(ApiResponse.success(toDto(order), "Order completed"));
     }
 
     // Request/Response DTOs

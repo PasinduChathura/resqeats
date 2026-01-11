@@ -91,7 +91,7 @@ public class Outlet extends BaseEntity {
     @Column(name = "status", length = 30, nullable = false)
     @JsonProperty("status")
     @Builder.Default
-    private OutletStatus status = OutletStatus.PENDING_APPROVAL;
+    private OutletStatus status = OutletStatus.PENDING;
 
     @Column(name = "average_rating", precision = 3, scale = 2)
     @JsonProperty("average_rating")

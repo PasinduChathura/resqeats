@@ -28,6 +28,8 @@ public interface OutletItemRepository extends BaseScopedRepository<OutletItem> {
     
     List<OutletItem> findByOutletId(Long outletId);
 
+    long countByOutletId(Long outletId);
+
     Optional<OutletItem> findByOutletIdAndItemId(Long outletId, Long itemId);
 
     @Query("SELECT oi FROM OutletItem oi WHERE oi.outletId = :outletId AND oi.isAvailable = true AND oi.currentQuantity > 0")

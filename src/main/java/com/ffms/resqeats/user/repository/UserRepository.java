@@ -1,25 +1,25 @@
 package com.ffms.resqeats.user.repository;
 
 import com.ffms.resqeats.common.repository.BaseScopedRepository;
+import com.ffms.resqeats.security.context.SecurityContextHolder;
 import com.ffms.resqeats.user.entity.User;
 import com.ffms.resqeats.user.enums.UserRole;
 import com.ffms.resqeats.user.enums.UserStatus;
-import com.ffms.resqeats.security.context.SecurityContextHolder;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
 import java.util.Optional;
 
 /**
  * User repository per SRS Section 6.3.
- * 
+ * <p>
  * TENANT SCOPED:
  * - SUPER_ADMIN/ADMIN: Full access to users
  * - MERCHANT: Access to users within their merchant
@@ -28,6 +28,14 @@ import java.util.Optional;
  */
 @Repository
 public interface UserRepository extends BaseScopedRepository<User>, JpaSpecificationExecutor<User> {
+
+    /**
+     * Ensures required associations are fetched for DTO mapping.
+     * Without this, accessing {@code user.getMerchant()} / {@code user.getOutlet()} outside the repository
+     * transaction can trigger {@link org.hibernate.LazyInitializationException}.
+     */
+    @EntityGraph(attributePaths = {"merchant", "outlet"})
+    Optional<User> findById(Long id);
 
     @EntityGraph(attributePaths = {"merchant", "outlet"})
     Page<User> findAll(Specification<User> spec, Pageable pageable);
@@ -60,8 +68,8 @@ public interface UserRepository extends BaseScopedRepository<User>, JpaSpecifica
     boolean existsByEmail(String email);
 
     @Query("SELECT u FROM User u WHERE u.oauth2Provider = :provider AND u.oauth2ProviderId = :providerId")
-    Optional<User> findByOAuth2ProviderAndProviderId(@Param("provider") String provider, 
-                                                      @Param("providerId") String providerId);
+    Optional<User> findByOAuth2ProviderAndProviderId(@Param("provider") String provider,
+                                                     @Param("providerId") String providerId);
 
     Page<User> findByRole(UserRole role, Pageable pageable);
 
@@ -78,7 +86,4 @@ public interface UserRepository extends BaseScopedRepository<User>, JpaSpecifica
 
     @Query("SELECT COUNT(u) FROM User u WHERE u.role = :role AND u.status = 'ACTIVE'")
     long countActiveByRole(@Param("role") UserRole role);
-
-    Page<User> findByEmailContainingIgnoreCaseOrFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(
-            String email, String firstName, String lastName, Pageable pageable);
 }

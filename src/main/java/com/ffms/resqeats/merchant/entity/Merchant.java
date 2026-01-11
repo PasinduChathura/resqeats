@@ -20,13 +20,14 @@ import java.time.LocalDateTime;
  * Hierarchy: Merchant → Outlet → Item
  * 
  * HIBERNATE FILTERS (applied at repository level via TenantFilterAspect):
- * - merchantOwnerFilter: MERCHANT role sees only their own merchant (by owner_user_id)
  * - merchantIdFilter: Filter by specific merchant_id
+ * 
+ * Users (MERCHANT_USER, OUTLET_USER) are assigned to merchants via User.merchantId.
  */
 @Entity
 @Table(name = "merchants")
-@FilterDef(name = "merchantOwnerFilter", parameters = @ParamDef(name = "ownerUserId", type = Long.class))
-@Filter(name = "merchantOwnerFilter", condition = "owner_user_id = :ownerUserId")
+@FilterDef(name = "merchantIdFilter", parameters = @ParamDef(name = "merchantId", type = Long.class))
+@Filter(name = "merchantIdFilter", condition = "id = :merchantId")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -102,13 +103,6 @@ public class Merchant extends BaseEntity {
     @Column(name = "suspension_reason", length = 500)
     @JsonProperty("suspension_reason")
     private String suspensionReason;
-
-    /**
-     * The primary user who owns/manages this merchant account.
-     */
-    @Column(name = "owner_user_id", nullable = false)
-    @JsonProperty("owner_user_id")
-    private Long ownerUserId;
 
     /**
      * Check if merchant is approved and can operate.

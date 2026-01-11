@@ -10,6 +10,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.geo.*;
 import org.springframework.data.redis.connection.RedisGeoCommands;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.RedisConnectionFailureException;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -81,17 +82,46 @@ public class GeoService {
         log.debug("Executing Redis GEORADIUS query with center ({}, {}) and radius {} km", 
                 longitude, latitude, radiusKm);
         
-        GeoResults<RedisGeoCommands.GeoLocation<Object>> results = redisTemplate.opsForGeo()
-                .radius(GEO_KEY, circle, 
-                        RedisGeoCommands.GeoRadiusCommandArgs.newGeoRadiusArgs()
-                                .includeDistance()
-                                .includeCoordinates()
-                                .sortAscending()
-                                .limit(100));
+        GeoResults<RedisGeoCommands.GeoLocation<Object>> results = null;
+        try {
+            results = redisTemplate.opsForGeo()
+                    .radius(GEO_KEY, circle,
+                            RedisGeoCommands.GeoRadiusCommandArgs.newGeoRadiusArgs()
+                                    .includeDistance()
+                                    .includeCoordinates()
+                                    .sortAscending()
+                                    .limit(100));
+        } catch (RedisConnectionFailureException ex) {
+            log.warn("Redis unavailable for geo query, falling back to database search: {}", ex.getMessage());
+        } catch (Exception ex) {
+            log.error("Unexpected error while querying Redis geo index: {}", ex.getMessage(), ex);
+        }
 
         if (results == null) {
-            log.warn("No geo results found for coordinates - latitude: {}, longitude: {}", latitude, longitude);
-            return Collections.emptyList();
+            // Fallback: compute distances from DB for ACTIVE outlets
+            log.debug("Falling back to DB-based geo search for radius {} km", radiusKm);
+            List<Outlet> allActive = outletRepository.findAllByStatus(OutletStatus.ACTIVE);
+            List<NearbyOutlet> fallback = new ArrayList<>();
+            for (Outlet outlet : allActive) {
+                if (outlet.getLatitude() == null || outlet.getLongitude() == null) continue;
+                double d = calculateDistance(latitude, longitude, outlet.getLatitude().doubleValue(), outlet.getLongitude().doubleValue());
+                if (d <= radiusKm) {
+                    fallback.add(NearbyOutlet.builder()
+                            .outletId(outlet.getId())
+                            .merchantId(outlet.getMerchantId())
+                            .name(outlet.getName())
+                            .address(outlet.getAddress())
+                            .latitude(outlet.getLatitude().doubleValue())
+                            .longitude(outlet.getLongitude().doubleValue())
+                            .distanceKm(d)
+                            .isOpen(outlet.getStatus() == OutletStatus.ACTIVE)
+                            .build());
+                }
+            }
+            fallback.sort(Comparator.comparingDouble(NearbyOutlet::getDistanceKm));
+            if (fallback.size() > 100) fallback = fallback.subList(0, 100);
+            log.info("DB fallback returned {} nearby outlets", fallback.size());
+            return fallback;
         }
 
         log.debug("Redis returned {} geo results, processing outlet details", results.getContent().size());
@@ -167,8 +197,14 @@ public class GeoService {
         log.info("Calculating distance to outlet {} from user location ({}, {})", outletId, userLat, userLng);
         
         log.debug("Attempting to retrieve outlet position from Redis geo index");
-        List<Point> positions = redisTemplate.opsForGeo()
-                .position(GEO_KEY, outletId.toString());
+        List<Point> positions = null;
+        try {
+            positions = redisTemplate.opsForGeo().position(GEO_KEY, outletId.toString());
+        } catch (RedisConnectionFailureException ex) {
+            log.warn("Redis unavailable for position lookup, will fallback to DB: {}", ex.getMessage());
+        } catch (Exception ex) {
+            log.error("Unexpected error while retrieving position from Redis: {}", ex.getMessage(), ex);
+        }
 
         if (positions == null || positions.isEmpty() || positions.get(0) == null) {
             log.debug("Outlet {} not found in Redis geo index, falling back to database", outletId);
@@ -186,7 +222,7 @@ public class GeoService {
 
         Point outletPoint = positions.get(0);
         log.debug("Found outlet {} in Redis at coordinates ({}, {})", outletId, outletPoint.getX(), outletPoint.getY());
-        
+
         double d = calculateDistance(userLat, userLng, outletPoint.getY(), outletPoint.getX());
         log.info("Successfully calculated distance to outlet {} using Redis: {} km", outletId, d);
         return d;
@@ -207,11 +243,16 @@ public class GeoService {
             log.debug("Executing Redis GEOADD for outlet {} at coordinates ({}, {})", 
                     outlet.getId(), outlet.getLongitude(), outlet.getLatitude());
             
-            redisTemplate.opsForGeo().add(GEO_KEY, 
-                    new Point(outlet.getLongitude().doubleValue(), outlet.getLatitude().doubleValue()),
-                    outlet.getId().toString());
-            
-            log.info("Successfully added outlet {} to geo index", outlet.getId());
+            try {
+                redisTemplate.opsForGeo().add(GEO_KEY,
+                        new Point(outlet.getLongitude().doubleValue(), outlet.getLatitude().doubleValue()),
+                        outlet.getId().toString());
+                log.info("Successfully added outlet {} to geo index", outlet.getId());
+            } catch (RedisConnectionFailureException ex) {
+                log.warn("Redis unavailable, skipping geo index add for outlet {}: {}", outlet.getId(), ex.getMessage());
+            } catch (Exception ex) {
+                log.error("Unexpected error when adding outlet {} to geo index: {}", outlet.getId(), ex.getMessage(), ex);
+            }
         } else {
             log.warn("Cannot add outlet {} to geo index - missing coordinates (lat: {}, lng: {})", 
                     outlet.getId(), outlet.getLatitude(), outlet.getLongitude());
@@ -230,9 +271,14 @@ public class GeoService {
         log.info("Removing outlet {} from geo index", outletId);
         
         log.debug("Executing Redis ZREM for outlet {}", outletId);
-        redisTemplate.opsForGeo().remove(GEO_KEY, outletId.toString());
-        
-        log.info("Successfully removed outlet {} from geo index", outletId);
+        try {
+            redisTemplate.opsForGeo().remove(GEO_KEY, outletId.toString());
+            log.info("Successfully removed outlet {} from geo index", outletId);
+        } catch (RedisConnectionFailureException ex) {
+            log.warn("Redis unavailable, skipping geo index remove for outlet {}: {}", outletId, ex.getMessage());
+        } catch (Exception ex) {
+            log.error("Unexpected error when removing outlet {} from geo index: {}", outletId, ex.getMessage(), ex);
+        }
     }
 
     /**
@@ -325,7 +371,6 @@ public class GeoService {
         private Double longitude;
         private Double distanceKm;
         private Boolean isOpen;
-        private String distanceDisplay;
 
         /**
          * Returns a human-readable distance display string.

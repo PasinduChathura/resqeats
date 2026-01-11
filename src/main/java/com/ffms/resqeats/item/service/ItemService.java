@@ -15,8 +15,6 @@ import com.ffms.resqeats.item.enums.ItemType;
 import com.ffms.resqeats.item.repository.ItemRepository;
 import com.ffms.resqeats.item.repository.OutletItemRepository;
 import com.ffms.resqeats.item.specification.ItemSpecification;
-import com.ffms.resqeats.merchant.entity.Merchant;
-import com.ffms.resqeats.merchant.repository.MerchantRepository;
 import com.ffms.resqeats.outlet.entity.Outlet;
 import com.ffms.resqeats.outlet.repository.OutletRepository;
 import com.ffms.resqeats.user.entity.User;
@@ -66,7 +64,6 @@ public class ItemService {
     private final ItemRepository itemRepository;
     private final OutletItemRepository outletItemRepository;
     private final OutletRepository outletRepository;
-    private final MerchantRepository merchantRepository;
     private final UserRepository userRepository;
     private final InventoryService inventoryService;
     private final WebSocketService webSocketService;
@@ -558,18 +555,18 @@ public class ItemService {
                     return new BusinessException("AUTH_003", "User not found");
                 });
 
-        if (user.getRole() == UserRole.ADMIN) {
+        if (user.isAdmin()) {
             log.debug("Admin access granted for merchant: {}", merchantId);
             return;
         }
 
-        Merchant merchant = merchantRepository.findById(merchantId).orElse(null);
-        if (merchant == null || !merchant.getOwnerUserId().equals(userId)) {
-            log.warn("Merchant access denied - merchantId: {}, userId: {}, merchantOwnerId: {}", 
-                    merchantId, userId, merchant != null ? merchant.getOwnerUserId() : "null");
+        // MERCHANT_USER can only access their assigned merchant
+        if (!merchantId.equals(user.getMerchantId())) {
+            log.warn("Merchant access denied - merchantId: {}, userId: {}, userMerchantId: {}", 
+                    merchantId, userId, user.getMerchantId());
             throw new BusinessException("AUTH_003", "Not authorized to manage items for this merchant");
         }
-        log.debug("Merchant owner access granted - merchantId: {}, userId: {}", merchantId, userId);
+        log.debug("Merchant user access granted - merchantId: {}, userId: {}", merchantId, userId);
     }
 
     /**
@@ -595,17 +592,18 @@ public class ItemService {
                     return new BusinessException("AUTH_003", "User not found");
                 });
 
-        if (user.getRole() == UserRole.ADMIN) {
+        if (user.isAdmin()) {
             log.debug("Admin access granted for outlet: {}", outlet.getId());
             return;
         }
 
-        Merchant merchant = merchantRepository.findById(outlet.getMerchantId()).orElse(null);
-        if (merchant != null && merchant.getOwnerUserId().equals(userId)) {
-            log.debug("Merchant owner access granted for outlet: {}", outlet.getId());
+        // MERCHANT_USER can access outlets belonging to their merchant
+        if (user.getRole() == UserRole.MERCHANT_USER && outlet.getMerchantId().equals(user.getMerchantId())) {
+            log.debug("Merchant user access granted for outlet: {}", outlet.getId());
             return;
         }
 
+        // OUTLET_USER can only access their assigned outlet
         if (user.getRole() == UserRole.OUTLET_USER && outlet.getId().equals(user.getOutletId())) {
             log.debug("Outlet user access granted for outlet: {}", outlet.getId());
             return;

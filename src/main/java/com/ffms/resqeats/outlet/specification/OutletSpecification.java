@@ -133,10 +133,10 @@ public class OutletSpecification {
                 predicates.add(criteriaBuilder.equal(root.get("postalCode"), filter.getPostalCode()));
             }
 
-            // Filter by minimum rating (if rating field exists)
+            // Filter by minimum rating
             if (filter.getMinRating() != null) {
                 predicates.add(criteriaBuilder.greaterThanOrEqualTo(
-                        root.get("rating"), filter.getMinRating()));
+                        root.get("averageRating"), filter.getMinRating()));
             }
 
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));

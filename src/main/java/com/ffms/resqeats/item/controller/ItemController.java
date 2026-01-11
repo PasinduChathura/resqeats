@@ -10,7 +10,7 @@ import com.ffms.resqeats.item.dto.OutletItemDto;
 import com.ffms.resqeats.item.dto.UpdateItemRequest;
 import com.ffms.resqeats.item.service.ItemService;
 import com.ffms.resqeats.security.CurrentUser;
-import com.ffms.resqeats.security.UserPrincipal;
+import com.ffms.resqeats.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -50,7 +50,7 @@ import java.util.List;
  * DELETE /outlets/{outletId}/items/{outletItemId} - Remove from outlet
  */
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Items", description = "Item management APIs")
@@ -65,15 +65,8 @@ public class ItemController {
     @GetMapping("/outlets/{outletId}/items")
     @Operation(summary = "Get outlet items (customer view)")
     public ResponseEntity<ApiResponse<List<OutletItemDto>>> getOutletItems(@PathVariable Long outletId) {
-        log.info("Get outlet items request for outletId: {}", outletId);
-        try {
-            List<OutletItemDto> items = itemService.getAvailableOutletItems(outletId);
-            log.info("Retrieved {} items for outlet: {}", items.size(), outletId);
-            return ResponseEntity.ok(ApiResponse.success(items));
-        } catch (Exception e) {
-            log.error("Failed to get items for outlet: {} - Error: {}", outletId, e.getMessage());
-            throw e;
-        }
+        List<OutletItemDto> items = itemService.getAvailableOutletItems(outletId);
+        return ResponseEntity.ok(ApiResponse.success(items));
     }
 
     @GetMapping("/items/search")
@@ -81,29 +74,15 @@ public class ItemController {
     public ResponseEntity<ApiResponse<PageResponse<OutletItemDto>>> searchItems(
             @RequestParam String query,
             Pageable pageable) {
-        log.info("Search items request - query: {}, page: {}", query, pageable.getPageNumber());
-        try {
-            Page<OutletItemDto> items = itemService.searchItems(query, pageable);
-            log.info("Found {} items for query: {}", items.getTotalElements(), query);
-            return ResponseEntity.ok(ApiResponse.success(PageResponse.from(items)));
-        } catch (Exception e) {
-            log.error("Failed to search items - Error: {}", e.getMessage());
-            throw e;
-        }
+        Page<OutletItemDto> items = itemService.searchItems(query, pageable);
+        return ResponseEntity.ok(ApiResponse.success(PageResponse.from(items)));
     }
 
     @GetMapping("/items/{id}")
     @Operation(summary = "Get item details")
     public ResponseEntity<ApiResponse<ItemDto>> getItem(@PathVariable Long id) {
-        log.info("Get item details request for itemId: {}", id);
-        try {
-            ItemDto item = itemService.getItem(id);
-            log.info("Successfully retrieved item: {}", id);
-            return ResponseEntity.ok(ApiResponse.success(item));
-        } catch (Exception e) {
-            log.error("Failed to get item: {} - Error: {}", id, e.getMessage());
-            throw e;
-        }
+        ItemDto item = itemService.getItem(id);
+        return ResponseEntity.ok(ApiResponse.success(item));
     }
 
     // =====================
@@ -114,18 +93,11 @@ public class ItemController {
     @Operation(summary = "Create item")
     @PreAuthorize("hasRole('MERCHANT_USER')")
     public ResponseEntity<ApiResponse<ItemDto>> createItem(
-            @CurrentUser UserPrincipal currentUser,
+            @CurrentUser CustomUserDetails currentUser,
             @PathVariable Long merchantId,
             @Valid @RequestBody CreateItemRequest request) {
-        log.info("Create item request for merchantId: {} - Name: {}", merchantId, request.getName());
-        try {
-            ItemDto item = itemService.createItem(merchantId, request, currentUser.getId());
-            log.info("Item created successfully: {} for merchant: {}", item.getId(), merchantId);
-            return ResponseEntity.ok(ApiResponse.success(item, "Item created"));
-        } catch (Exception e) {
-            log.error("Failed to create item for merchant: {} - Error: {}", merchantId, e.getMessage());
-            throw e;
-        }
+        ItemDto item = itemService.createItem(merchantId, request, currentUser.getId());
+        return ResponseEntity.ok(ApiResponse.success(item, "Item created"));
     }
 
     @GetMapping("/merchants/{merchantId}/items")
@@ -134,33 +106,19 @@ public class ItemController {
     public ResponseEntity<ApiResponse<PageResponse<ItemDto>>> getMerchantItems(
             @PathVariable Long merchantId,
             Pageable pageable) {
-        log.info("List items request for merchantId: {}, page: {}", merchantId, pageable.getPageNumber());
-        try {
-            Page<ItemDto> items = itemService.getMerchantItems(merchantId, pageable);
-            log.info("Retrieved {} items for merchant: {}", items.getTotalElements(), merchantId);
-            return ResponseEntity.ok(ApiResponse.success(PageResponse.from(items)));
-        } catch (Exception e) {
-            log.error("Failed to list items for merchant: {} - Error: {}", merchantId, e.getMessage());
-            throw e;
-        }
+        Page<ItemDto> items = itemService.getMerchantItems(merchantId, pageable);
+        return ResponseEntity.ok(ApiResponse.success(PageResponse.from(items)));
     }
 
     @PutMapping("/items/{id}")
     @Operation(summary = "Update item")
     @PreAuthorize("hasRole('MERCHANT_USER')")
     public ResponseEntity<ApiResponse<ItemDto>> updateItem(
-            @CurrentUser UserPrincipal currentUser,
+            @CurrentUser CustomUserDetails currentUser,
             @PathVariable Long id,
             @Valid @RequestBody UpdateItemRequest request) {
-        log.info("Update item request for itemId: {} by userId: {}", id, currentUser.getId());
-        try {
-            ItemDto item = itemService.updateItem(id, request, currentUser.getId());
-            log.info("Item updated successfully: {}", id);
-            return ResponseEntity.ok(ApiResponse.success(item, "Item updated"));
-        } catch (Exception e) {
-            log.error("Failed to update item: {} - Error: {}", id, e.getMessage());
-            throw e;
-        }
+        ItemDto item = itemService.updateItem(id, request, currentUser.getId());
+        return ResponseEntity.ok(ApiResponse.success(item, "Item updated"));
     }
 
     // =====================
@@ -171,64 +129,43 @@ public class ItemController {
     @Operation(summary = "Add item to outlet")
     @PreAuthorize("hasAnyRole('MERCHANT_USER', 'OUTLET_USER')")
     public ResponseEntity<ApiResponse<OutletItemDto>> addItemToOutlet(
-            @CurrentUser UserPrincipal currentUser,
+            @CurrentUser CustomUserDetails currentUser,
             @PathVariable Long outletId,
             @Valid @RequestBody AddItemToOutletRequest request) {
-        log.info("Add item to outlet request - outletId: {}, itemId: {}", outletId, request.getItemId());
-        try {
-            OutletItemDto outletItem = itemService.addItemToOutlet(
-                    outletId,
-                    request.getItemId(),
-                    request.getQuantity() != null ? request.getQuantity() : 0,
-                    currentUser.getId()
-            );
-            log.info("Item added to outlet successfully: {} - Item: {}", outletId, request.getItemId());
-            return ResponseEntity.ok(ApiResponse.success(outletItem, "Item added to outlet"));
-        } catch (Exception e) {
-            log.error("Failed to add item to outlet: {} - Error: {}", outletId, e.getMessage());
-            throw e;
-        }
+        OutletItemDto outletItem = itemService.addItemToOutlet(
+                outletId,
+                request.getItemId(),
+                request.getQuantity() != null ? request.getQuantity() : 0,
+                currentUser.getId()
+        );
+        return ResponseEntity.ok(ApiResponse.success(outletItem, "Item added to outlet"));
     }
 
     @PutMapping("/outlets/{outletId}/items/{outletItemId}")
     @Operation(summary = "Update outlet item")
     @PreAuthorize("hasAnyRole('MERCHANT_USER', 'OUTLET_USER')")
     public ResponseEntity<ApiResponse<OutletItemDto>> updateOutletItem(
-            @CurrentUser UserPrincipal currentUser,
+            @CurrentUser CustomUserDetails currentUser,
             @PathVariable Long outletId,
             @PathVariable Long outletItemId,
             @Valid @RequestBody UpdateOutletItemRequest request) {
-        log.info("Update outlet item request - outletId: {}, outletItemId: {}", outletId, outletItemId);
-        try {
-            OutletItemDto outletItem = itemService.updateOutletItem(
-                    outletItemId,
-                    request.getQuantity() != null ? request.getQuantity() : 0,
-                    currentUser.getId()
-            );
-            log.info("Outlet item updated successfully: {}", outletItemId);
-            return ResponseEntity.ok(ApiResponse.success(outletItem, "Outlet item updated"));
-        } catch (Exception e) {
-            log.error("Failed to update outlet item: {} - Error: {}", outletItemId, e.getMessage());
-            throw e;
-        }
+        OutletItemDto outletItem = itemService.updateOutletItem(
+                outletItemId,
+                request.getQuantity() != null ? request.getQuantity() : 0,
+                currentUser.getId()
+        );
+        return ResponseEntity.ok(ApiResponse.success(outletItem, "Outlet item updated"));
     }
 
     @DeleteMapping("/outlets/{outletId}/items/{outletItemId}")
     @Operation(summary = "Remove item from outlet")
     @PreAuthorize("hasAnyRole('MERCHANT_USER', 'OUTLET_USER')")
     public ResponseEntity<ApiResponse<Void>> removeItemFromOutlet(
-            @CurrentUser UserPrincipal currentUser,
+            @CurrentUser CustomUserDetails currentUser,
             @PathVariable Long outletId,
             @PathVariable Long outletItemId) {
-        log.info("Remove item from outlet request - outletId: {}, outletItemId: {}", outletId, outletItemId);
-        try {
-            itemService.removeItemFromOutlet(outletItemId, currentUser.getId());
-            log.info("Item removed from outlet successfully: {}", outletItemId);
-            return ResponseEntity.ok(ApiResponse.success(null, "Item removed from outlet"));
-        } catch (Exception e) {
-            log.error("Failed to remove item from outlet: {} - Error: {}", outletItemId, e.getMessage());
-            throw e;
-        }
+        itemService.removeItemFromOutlet(outletItemId, currentUser.getId());
+        return ResponseEntity.ok(ApiResponse.success(null, "Item removed from outlet"));
     }
 
     // =====================
@@ -241,15 +178,8 @@ public class ItemController {
     public ResponseEntity<ApiResponse<PageResponse<ItemListResponseDto>>> getItems(
             ItemFilterDto filter,
             Pageable pageable) {
-        log.info("List items request - filter: {}, page: {}", filter, pageable.getPageNumber());
-        try {
-            Page<ItemListResponseDto> items = itemService.getAllItems(filter, pageable);
-            log.info("Retrieved {} items", items.getTotalElements());
-            return ResponseEntity.ok(ApiResponse.success(PageResponse.from(items)));
-        } catch (Exception e) {
-            log.error("Failed to list items - Error: {}", e.getMessage());
-            throw e;
-        }
+        Page<ItemListResponseDto> items = itemService.getAllItems(filter, pageable);
+        return ResponseEntity.ok(ApiResponse.success(PageResponse.from(items)));
     }
 
     // Request DTOs

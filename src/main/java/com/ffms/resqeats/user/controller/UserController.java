@@ -2,26 +2,31 @@ package com.ffms.resqeats.user.controller;
 
 import com.ffms.resqeats.common.dto.ApiResponse;
 import com.ffms.resqeats.common.dto.PageResponse;
+import com.ffms.resqeats.user.dto.RoleDto;
 import com.ffms.resqeats.user.dto.UpdateUserRequest;
 import com.ffms.resqeats.user.dto.UserDto;
 import com.ffms.resqeats.user.dto.UserFilterDto;
-import com.ffms.resqeats.user.dto.UserListResponseDto;
+import com.ffms.resqeats.user.dto.admin.AdminCreateUserRequest;
+import com.ffms.resqeats.user.dto.admin.AdminUpdateUserRequest;
+import com.ffms.resqeats.user.dto.admin.UserAdminDto;
+import com.ffms.resqeats.user.dto.admin.UserAdminListDto;
+import com.ffms.resqeats.user.enums.UserStatus;
 import com.ffms.resqeats.user.service.UserService;
-import com.ffms.resqeats.security.CurrentUser;
-import com.ffms.resqeats.security.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * User controller per SRS Section 6.2.
@@ -35,16 +40,19 @@ import org.springframework.web.bind.annotation.*;
  * PUT /users/password - Change password
  * DELETE /users/me - Deactivate account
  *
- * Scoped Admin Endpoints:
+ * Admin Endpoints:
+ * POST /users - Create user (ADMIN - supports all roles)
  * GET /users - List users with filters (scoped by role)
  * GET /users/{id} - Get user details (ADMIN)
+ * PUT /users/{id} - Update user (ADMIN)
+ * DELETE /users/{id} - Delete user (ADMIN - soft delete)
  * POST /users/{id}/suspend - Suspend user (ADMIN)
  * POST /users/{id}/reactivate - Reactivate user (ADMIN)
+ * POST /users/{id}/reset-password - Reset user password (ADMIN)
  */
 @RestController
 @RequestMapping("/users")
 @RequiredArgsConstructor
-@Slf4j
 @Tag(name = "Users", description = "User management APIs")
 public class UserController {
 
@@ -57,87 +65,64 @@ public class UserController {
     @GetMapping("/me")
     @Operation(summary = "Get current user profile")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse<UserDto>> getCurrentUser(@CurrentUser UserPrincipal currentUser) {
-        log.info("Get current user profile request for userId: {}", currentUser.getId());
-        try {
-            UserDto user = userService.getUserProfile(currentUser.getId());
-            log.info("Successfully retrieved profile for userId: {}", currentUser.getId());
-            return ResponseEntity.ok(ApiResponse.success(user));
-        } catch (Exception e) {
-            log.error("Failed to get profile for userId: {} - Error: {}", currentUser.getId(), e.getMessage());
-            throw e;
-        }
+    public ResponseEntity<ApiResponse<UserDto>> getCurrentUser() {
+        UserDto user = userService.getMyProfile();
+        return ResponseEntity.ok(ApiResponse.success(user));
     }
 
     @PutMapping("/me")
     @Operation(summary = "Update profile")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<UserDto>> updateProfile(
-            @CurrentUser UserPrincipal currentUser,
             @Valid @RequestBody UpdateUserRequest request) {
-        log.info("Update profile request for userId: {}", currentUser.getId());
-        try {
-            UserDto user = userService.updateProfile(currentUser.getId(), request);
-            log.info("Profile updated successfully for userId: {}", currentUser.getId());
-            return ResponseEntity.ok(ApiResponse.success(user, "Profile updated"));
-        } catch (Exception e) {
-            log.error("Failed to update profile for userId: {} - Error: {}", currentUser.getId(), e.getMessage());
-            throw e;
-        }
+        UserDto user = userService.updateMyProfile(request);
+        return ResponseEntity.ok(ApiResponse.success(user, "Profile updated"));
     }
 
     @PutMapping("/password")
     @Operation(summary = "Change password")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<Void>> changePassword(
-            @CurrentUser UserPrincipal currentUser,
             @Valid @RequestBody ChangePasswordRequest request) {
-        log.info("Change password request for userId: {}", currentUser.getId());
-        try {
-            userService.changePassword(currentUser.getId(), request.getCurrentPassword(), request.getNewPassword());
-            log.info("Password changed successfully for userId: {}", currentUser.getId());
-            return ResponseEntity.ok(ApiResponse.success(null, "Password changed"));
-        } catch (Exception e) {
-            log.warn("Password change failed for userId: {} - Error: {}", currentUser.getId(), e.getMessage());
-            throw e;
-        }
+        userService.changeMyPassword(request.getCurrentPassword(), request.getNewPassword());
+        return ResponseEntity.ok(ApiResponse.success(null, "Password changed"));
     }
 
     @DeleteMapping("/me")
     @Operation(summary = "Deactivate account")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse<Void>> deactivateAccount(@CurrentUser UserPrincipal currentUser) {
-        log.info("Deactivate account request for userId: {}", currentUser.getId());
-        try {
-            userService.deactivateAccount(currentUser.getId());
-            log.info("Account deactivated successfully for userId: {}", currentUser.getId());
-            return ResponseEntity.ok(ApiResponse.success(null, "Account deactivated"));
-        } catch (Exception e) {
-            log.error("Failed to deactivate account for userId: {} - Error: {}", currentUser.getId(), e.getMessage());
-            throw e;
-        }
+    public ResponseEntity<ApiResponse<Void>> deactivateAccount() {
+        userService.deactivateMyAccount();
+        return ResponseEntity.ok(ApiResponse.success(null, "Account deactivated"));
     }
 
     // =====================
-    // Users List Endpoint (Scoped)
+    // Admin Endpoints
     // =====================
 
     @GetMapping
     @Operation(summary = "List users with filters (scoped by role)")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse<PageResponse<UserListResponseDto>>> getUsers(
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<PageResponse<UserAdminListDto>>> getUsers(
             UserFilterDto filter,
             Pageable pageable) {
-        log.info("List users request - filter: {}, page: {}", filter, pageable.getPageNumber());
-        try {
-            // Scope filtering is handled automatically in UserSpecification
-            Page<UserListResponseDto> users = userService.getAllUsers(filter, pageable);
-            log.info("Retrieved {} users", users.getTotalElements());
-            return ResponseEntity.ok(ApiResponse.success(PageResponse.from(users)));
-        } catch (Exception e) {
-            log.error("Failed to list users - Error: {}", e.getMessage());
-            throw e;
-        }
+        Page<UserAdminListDto> users = userService.getAllUsersAdmin(filter, pageable);
+        return ResponseEntity.ok(ApiResponse.success(PageResponse.from(users)));
+    }
+
+    @GetMapping("/roles")
+    @Operation(summary = "Get all supported roles")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<List<RoleDto>>> getAllRoles() {
+        List<RoleDto> roles = userService.getAllRoles();
+        return ResponseEntity.ok(ApiResponse.success(roles));
+    }
+
+    @GetMapping("/statuses")
+    @Operation(summary = "Get all supported user statuses")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<List<UserStatus>>> getAllUserStatuses() {
+        return ResponseEntity.ok(ApiResponse.success(List.of(UserStatus.values())));
     }
 
     // =====================
@@ -147,49 +132,63 @@ public class UserController {
     @GetMapping("/{id}")
     @Operation(summary = "Get user details")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<UserDto>> getUserById(@PathVariable Long id) {
-        log.info("Get user details request for userId: {}", id);
-        try {
-            UserDto user = userService.getUserById(id);
-            log.info("Successfully retrieved user: {}", id);
-            return ResponseEntity.ok(ApiResponse.success(user));
-        } catch (Exception e) {
-            log.error("Failed to get user: {} - Error: {}", id, e.getMessage());
-            throw e;
-        }
+    public ResponseEntity<ApiResponse<UserAdminDto>> getUserById(@PathVariable Long id) {
+        UserAdminDto user = userService.getAdminUserById(id);
+        return ResponseEntity.ok(ApiResponse.success(user));
+    }
+
+    @PostMapping
+    @Operation(summary = "Create user (Admin - supports ADMIN, MERCHANT_USER, OUTLET_USER, CUSTOMER_USER)")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<UserAdminDto>> createUser(
+            @Valid @RequestBody AdminCreateUserRequest request) {
+        UserAdminDto user = userService.createUser(request);
+        return ResponseEntity.ok(ApiResponse.success(user, "User created"));
+    }
+
+    @PutMapping("/{id}")
+    @Operation(summary = "Update user (Admin)")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<UserAdminDto>> updateUser(
+            @PathVariable Long id,
+            @Valid @RequestBody AdminUpdateUserRequest request) {
+        UserAdminDto user = userService.updateUser(id, request);
+        return ResponseEntity.ok(ApiResponse.success(user, "User updated"));
+    }
+
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Delete user (soft delete)")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable Long id) {
+        userService.deleteUser(id);
+        return ResponseEntity.ok(ApiResponse.success(null, "User deleted"));
     }
 
     @PostMapping("/{id}/suspend")
     @Operation(summary = "Suspend user")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<UserDto>> suspendUser(
+    public ResponseEntity<ApiResponse<UserAdminDto>> suspendUser(
             @PathVariable Long id,
             @RequestBody(required = false) SuspendRequest request) {
         String reason = request != null ? request.getReason() : "Admin action";
-        log.info("Suspend user request for userId: {} - Reason: {}", id, reason);
-        try {
-            UserDto user = userService.suspendUser(id, reason);
-            log.info("User suspended successfully: {}", id);
-            return ResponseEntity.ok(ApiResponse.success(user, "User suspended"));
-        } catch (Exception e) {
-            log.error("Failed to suspend user: {} - Error: {}", id, e.getMessage());
-            throw e;
-        }
+        UserAdminDto user = userService.suspendUser(id, reason);
+        return ResponseEntity.ok(ApiResponse.success(user, "User suspended"));
     }
 
     @PostMapping("/{id}/reactivate")
     @Operation(summary = "Reactivate user")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<UserDto>> reactivateUser(@PathVariable Long id) {
-        log.info("Reactivate user request for userId: {}", id);
-        try {
-            UserDto user = userService.reactivateUser(id);
-            log.info("User reactivated successfully: {}", id);
-            return ResponseEntity.ok(ApiResponse.success(user, "User reactivated"));
-        } catch (Exception e) {
-            log.error("Failed to reactivate user: {} - Error: {}", id, e.getMessage());
-            throw e;
-        }
+    public ResponseEntity<ApiResponse<UserAdminDto>> reactivateUser(@PathVariable Long id) {
+        UserAdminDto user = userService.reactivateUser(id);
+        return ResponseEntity.ok(ApiResponse.success(user, "User reactivated"));
+    }
+
+    @PostMapping("/{id}/reset-password")
+    @Operation(summary = "Reset user password and send email")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> resetUserPassword(@PathVariable Long id) {
+        userService.resetUserPassword(id);
+        return ResponseEntity.ok(ApiResponse.success(null, "Password reset email sent"));
     }
 
     // Request DTOs
@@ -199,7 +198,10 @@ public class UserController {
     @AllArgsConstructor
     @lombok.ToString(exclude = {"currentPassword", "newPassword"})
     public static class ChangePasswordRequest {
+        @NotBlank
         private String currentPassword;
+
+        @NotBlank
         private String newPassword;
     }
 

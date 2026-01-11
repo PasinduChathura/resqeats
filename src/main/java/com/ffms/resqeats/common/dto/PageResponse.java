@@ -1,5 +1,6 @@
 package com.ffms.resqeats.common.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -37,6 +38,16 @@ public class PageResponse<T> {
 
     @JsonProperty("is_last")
     private boolean isLast;
+
+    @JsonIgnore
+    public boolean isFirst() {
+        return isFirst;
+    }
+
+    @JsonIgnore
+    public boolean isLast() {
+        return isLast;
+    }
 
     public static <T> PageResponse<T> from(Page<T> page) {
         return PageResponse.<T>builder()

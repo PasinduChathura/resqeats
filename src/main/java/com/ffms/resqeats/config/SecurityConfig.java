@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -146,6 +147,9 @@ public class SecurityConfig {
                                 // Health check
                                 "/actuator/health"
                         ).permitAll();
+
+                            // Public merchant discovery endpoints
+                            auth.requestMatchers(HttpMethod.GET, "/merchants", "/merchants/*").permitAll();
                         
                         // MEDIUM-008 FIX: Swagger/OpenAPI documentation - deny in production
                         if (isProduction) {
@@ -161,19 +165,9 @@ public class SecurityConfig {
                                 
                                 // ADMIN or higher endpoints
                                 .requestMatchers("/admin/**").hasRole("ADMIN")
-                                
-                                // Merchant management (ADMIN or MERCHANT)
-                                .requestMatchers("/merchants/**").hasRole("MERCHANT")
-                                
-                                // Outlet management (ADMIN, MERCHANT, or OUTLET_USER)
-                                .requestMatchers("/outlet/**").hasRole("OUTLET_USER")
-                                
-                                // User endpoints (all authenticated users)
-                                .requestMatchers("/users/me/**").authenticated()
-                                .requestMatchers("/users/**").hasRole("ADMIN")
-                                
-                                // Cart and order endpoints (authenticated users)
-                                .requestMatchers("/cart/**", "/orders/**").authenticated()
+
+                                // All API endpoints require authentication by default;
+                                .requestMatchers("/users/**", "/cart/**", "/orders/**", "/admin/**", "/items/**", "/payments/**", "/notifications/**").authenticated()
                                 
                                 // All other requests require authentication
                                 .anyRequest().authenticated();
