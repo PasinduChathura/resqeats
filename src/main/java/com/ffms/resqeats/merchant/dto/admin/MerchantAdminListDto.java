@@ -32,6 +32,6 @@ public class MerchantAdminListDto {
 
     private MerchantStatus status;
 
-    @JsonProperty("created_at")
-    private LocalDateTime createdAt;
+//    @JsonProperty("created_at")
+//    private LocalDateTime createdAt;
 }

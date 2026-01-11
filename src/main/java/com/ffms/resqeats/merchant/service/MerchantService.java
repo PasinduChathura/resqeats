@@ -333,7 +333,6 @@ public class MerchantService {
                 .contactEmail(merchant.getContactEmail())
                 .contactPhone(merchant.getContactPhone())
                 .status(merchant.getStatus())
-                .createdAt(merchant.getCreatedAt())
                 .build();
     }
 
