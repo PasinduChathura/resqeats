@@ -42,27 +42,9 @@ public class MerchantAdminDto {
 
     private MerchantStatus status;
 
-    @JsonProperty("approved_at")
-    private LocalDateTime approvedAt;
-
-    @JsonProperty("approved_by")
-    private Long approvedBy;
-
-    @JsonProperty("created_at")
-    private LocalDateTime createdAt;
-
-    @JsonProperty("updated_at")
-    private LocalDateTime updatedAt;
-
-    @JsonProperty("rejected_at")
-    private LocalDateTime rejectedAt;
-
-    @JsonProperty("rejection_reason")
-    private String rejectionReason;
-
-    @JsonProperty("suspended_at")
-    private LocalDateTime suspendedAt;
-
-    @JsonProperty("suspension_reason")
-    private String suspendedReason;
+//    @JsonProperty("rejection_reason")
+//    private String rejectionReason;
+//
+//    @JsonProperty("suspension_reason")
+//    private String suspendedReason;
 }

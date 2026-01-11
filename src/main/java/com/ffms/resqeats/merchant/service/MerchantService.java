@@ -313,14 +313,8 @@ public class MerchantService {
                 .description(merchant.getDescription())
                 .website(merchant.getWebsite())
                 .status(merchant.getStatus())
-                .approvedAt(merchant.getApprovedAt())
-                .approvedBy(merchant.getApprovedBy())
-                .createdAt(merchant.getCreatedAt())
-                .updatedAt(merchant.getUpdatedAt())
-                .rejectedAt(merchant.getRejectedAt())
-                .rejectionReason(merchant.getRejectionReason())
-                .suspendedAt(merchant.getSuspendedAt())
-                .suspendedReason(merchant.getSuspensionReason())
+//                .rejectionReason(merchant.getRejectionReason())
+//                .suspendedReason(merchant.getSuspensionReason())
                 .build();
     }
 
