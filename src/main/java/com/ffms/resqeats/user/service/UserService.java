@@ -139,7 +139,7 @@ public class UserService {
         Long userId = requireAuthenticatedUserId();
         log.info("Deactivating account for user: {}", userId);
         User user = getUserOrThrow(userId);
-        user.setStatus(UserStatus.INACTIVE);
+        user.setStatus(UserStatus.DISABLED);
         userRepository.save(user);
         log.info("Account deactivated for user: {}", userId);
     }
@@ -383,7 +383,7 @@ public class UserService {
     }
 
     /**
-     * Deletes a user (soft delete by setting status to INACTIVE).
+     * Deletes a user (soft delete by setting status to DISABLED).
      */
     @Transactional
     public void deleteUser(Long userId) {
@@ -403,7 +403,7 @@ public class UserService {
             throw new BusinessException("USER_004", "Cannot delete user with equal or higher privileges");
         }
 
-        user.setStatus(UserStatus.INACTIVE);
+        user.setStatus(UserStatus.DISABLED);
         userRepository.save(user);
         log.warn("User deleted (soft): {}", userId);
     }
@@ -490,7 +490,7 @@ public class UserService {
     public void deactivateAccount(Long userId) {
         log.info("Deactivating account for userId: {}", userId);
         User user = getUserOrThrow(userId);
-        user.setStatus(UserStatus.INACTIVE);
+        user.setStatus(UserStatus.DISABLED);
         userRepository.save(user);
         log.info("Account deactivated for userId: {}", userId);
     }

@@ -24,7 +24,7 @@ public class OutletFilterDto {
     @Schema(description = "Filter by merchant ID")
     private Long merchantId;
 
-    @Schema(description = "Filter by outlet status (ACTIVE, INACTIVE, SUSPENDED, PENDING)")
+    @Schema(description = "Filter by outlet status (PENDING_APPROVAL, ACTIVE, SUSPENDED, DISABLED)")
     private OutletStatus status;
 
     @Schema(description = "Filter by city")

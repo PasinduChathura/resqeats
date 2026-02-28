@@ -1,6 +1,7 @@
 package com.ffms.resqeats.outlet.dto.admin;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.ffms.resqeats.outlet.enums.OutletAvailabilityStatus;
 import com.ffms.resqeats.outlet.enums.OutletStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -25,6 +26,9 @@ public class OutletAdminListDTO {
 	private String merchantLogoUrl;
 
 	private OutletStatus status;
+
+	@JsonProperty("availability_status")
+	private OutletAvailabilityStatus availabilityStatus;
 
 	private String address;
 

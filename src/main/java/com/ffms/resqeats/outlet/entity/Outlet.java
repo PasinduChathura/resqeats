@@ -2,6 +2,7 @@ package com.ffms.resqeats.outlet.entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ffms.resqeats.common.entity.BaseEntity;
+import com.ffms.resqeats.outlet.enums.OutletAvailabilityStatus;
 import com.ffms.resqeats.outlet.enums.OutletStatus;
 import com.ffms.resqeats.security.tenant.TenantScoped;
 import com.ffms.resqeats.security.tenant.TenantScopeType;
@@ -91,7 +92,13 @@ public class Outlet extends BaseEntity {
     @Column(name = "status", length = 30, nullable = false)
     @JsonProperty("status")
     @Builder.Default
-    private OutletStatus status = OutletStatus.PENDING;
+    private OutletStatus status = OutletStatus.PENDING_APPROVAL;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "availability_status", length = 20, nullable = false)
+    @JsonProperty("availability_status")
+    @Builder.Default
+    private OutletAvailabilityStatus availabilityStatus = OutletAvailabilityStatus.OPEN;
 
     @Column(name = "average_rating", precision = 3, scale = 2)
     @JsonProperty("average_rating")
@@ -115,6 +122,6 @@ public class Outlet extends BaseEntity {
      * Check if outlet is currently accepting orders.
      */
     public boolean canAcceptOrders() {
-        return status == OutletStatus.ACTIVE;
+        return status == OutletStatus.ACTIVE && availabilityStatus == OutletAvailabilityStatus.OPEN;
     }
 }

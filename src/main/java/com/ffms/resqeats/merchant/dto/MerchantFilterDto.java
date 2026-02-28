@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class MerchantFilterDto {
 
-    @Schema(description = "Filter by merchant status (PENDING, APPROVED, SUSPENDED, REJECTED)")
+    @Schema(description = "Filter by merchant status (PENDING_APPROVAL, APPROVED, SUSPENDED, DISABLED, REJECTED)")
     private MerchantStatus status;
 
     @Schema(description = "Filter by merchant category")

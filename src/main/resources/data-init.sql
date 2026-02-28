@@ -141,7 +141,7 @@ INSERT IGNORE INTO merchants (owner_user_id, name, registration_no, category, de
      'Seafood restaurant at Cinnamon Grand offering premium Sri Lankan and international seafood dishes with sustainable waste practices.',
      'thelagoon@cinnamonhotels.com', '+94112491000',
      'https://www.cinnamonhotels.com/cinnamongrandcolombo/dining/the-lagoon',
-     'https://resqeats.lk/logos/the-lagoon.png', 'PENDING', @now, @now);
+    'https://resqeats.lk/logos/the-lagoon.png', 'PENDING_APPROVAL', @now, @now);
 
 -- Capture merchant IDs
 SELECT id INTO @m_ministry FROM merchants WHERE registration_no = 'PV00123456' LIMIT 1;
@@ -161,7 +161,7 @@ UPDATE users SET merchant_id = @m_keells WHERE email = 'contact@keells.lk' AND (
 -- ====================================================================
 -- 4. OUTLETS
 -- ====================================================================
-INSERT IGNORE INTO outlets (merchant_id, name, description, address, city, postal_code, latitude, longitude, phone, email, status, average_rating, total_ratings, created_at, updated_at) VALUES
+INSERT IGNORE INTO outlets (merchant_id, name, description, address, city, postal_code, latitude, longitude, phone, email, status, availability_status, average_rating, total_ratings, created_at, updated_at) VALUES
     -- Ministry of Crab Outlets
     (@m_ministry,
      'Ministry of Crab - Dutch Hospital',
@@ -174,6 +174,7 @@ INSERT IGNORE INTO outlets (merchant_id, name, description, address, city, posta
      '+94112320707',
      'dutchhospital@ministryofcrab.com',
      'ACTIVE',
+    'OPEN',
      4.8,
      1256,
      @now,
@@ -191,6 +192,7 @@ INSERT IGNORE INTO outlets (merchant_id, name, description, address, city, posta
      '+94112055555',
      'parkstreet@keficolombo.lk',
      'ACTIVE',
+    'OPEN',
      4.6,
      892,
      @now,
@@ -208,6 +210,7 @@ INSERT IGNORE INTO outlets (merchant_id, name, description, address, city, posta
      '+94112491000',
      'plates@cinnamonhotels.com',
      'ACTIVE',
+    'OPEN',
      4.5,
      2341,
      @now,
@@ -223,6 +226,7 @@ INSERT IGNORE INTO outlets (merchant_id, name, description, address, city, posta
      '+94112491000',
      'noodles@cinnamonhotels.com',
      'ACTIVE',
+    'OPEN',
      4.4,
      876,
      @now,
@@ -240,6 +244,7 @@ INSERT IGNORE INTO outlets (merchant_id, name, description, address, city, posta
      '+94112694420',
      'colombo7@pereraandsons.lk',
      'ACTIVE',
+    'OPEN',
      4.3,
      3456,
      @now,
@@ -255,6 +260,7 @@ INSERT IGNORE INTO outlets (merchant_id, name, description, address, city, posta
      '+94112820425',
      'nugegoda@pereraandsons.lk',
      'ACTIVE',
+    'OPEN',
      4.2,
      2187,
      @now,
@@ -270,6 +276,7 @@ INSERT IGNORE INTO outlets (merchant_id, name, description, address, city, posta
      '+94112716363',
      'mtlavinia@pereraandsons.lk',
      'ACTIVE',
+    'OPEN',
      4.1,
      1543,
      @now,
@@ -287,6 +294,7 @@ INSERT IGNORE INTO outlets (merchant_id, name, description, address, city, posta
      '+94112574747',
      'libertyplaza@keells.com',
      'ACTIVE',
+    'OPEN',
      4.4,
      4521,
      @now,
@@ -302,6 +310,7 @@ INSERT IGNORE INTO outlets (merchant_id, name, description, address, city, posta
      '+94112074747',
      'crescat@keells.com',
      'ACTIVE',
+    'OPEN',
      4.5,
      3876,
      @now,
@@ -316,7 +325,8 @@ INSERT IGNORE INTO outlets (merchant_id, name, description, address, city, posta
      79.8977,
      '+94112867676',
      'rajagiriya@keells.com',
-     'INACTIVE',
+    'DISABLED',
+    'CLOSED',
      0.0,
      0,
      @now,

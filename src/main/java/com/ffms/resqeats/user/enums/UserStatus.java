@@ -10,9 +10,9 @@ public enum UserStatus {
     ACTIVE,
 
     /**
-     * User account is inactive (soft deleted or disabled).
+     * User account is disabled (soft deleted or intentionally disabled).
      */
-    INACTIVE,
+    DISABLED,
 
     /**
      * User account is suspended due to policy violations.

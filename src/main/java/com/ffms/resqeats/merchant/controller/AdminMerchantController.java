@@ -36,6 +36,8 @@ import java.util.stream.Collectors;
  * POST /admin/merchants/{id}/approve - Approve merchant
  * POST /admin/merchants/{id}/reject  - Reject merchant
  * POST /admin/merchants/{id}/suspend - Suspend merchant
+ * DELETE /admin/merchants/{id}       - Disable (soft-delete) merchant
+ * POST /admin/merchants/{id}/enable  - Enable disabled merchant
  */
 @RestController
 @RequestMapping("/admin/merchants")
@@ -128,6 +130,22 @@ public class AdminMerchantController {
         log.info("Admin suspend merchant: {}", id);
         MerchantAdminDto merchant = merchantService.suspendMerchant(id, request.getReason());
         return ResponseEntity.ok(ApiResponse.success(merchant, "Merchant suspended"));
+    }
+
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Disable merchant (Admin)")
+    public ResponseEntity<ApiResponse<Void>> disableMerchant(@PathVariable Long id) {
+        log.info("Admin disable merchant: {}", id);
+        merchantService.disableMerchant(id);
+        return ResponseEntity.ok(ApiResponse.success(null, "Merchant disabled"));
+    }
+
+    @PostMapping("/{id}/enable")
+    @Operation(summary = "Enable merchant (Admin)")
+    public ResponseEntity<ApiResponse<MerchantAdminDto>> enableMerchant(@PathVariable Long id) {
+        log.info("Admin enable merchant: {}", id);
+        MerchantAdminDto merchant = merchantService.enableMerchant(id);
+        return ResponseEntity.ok(ApiResponse.success(merchant, "Merchant enabled"));
     }
 
     // =====================

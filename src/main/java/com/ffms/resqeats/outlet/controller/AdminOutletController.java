@@ -39,6 +39,8 @@ import java.util.stream.Collectors;
  * POST   /admin/outlets/{id}/approve - Approve outlet
  * POST   /admin/outlets/{id}/suspend - Suspend outlet
  * POST   /admin/outlets/{id}/activate - Activate outlet
+ * POST   /admin/outlets/{id}/open     - Open outlet (availability)
+ * POST   /admin/outlets/{id}/close    - Close outlet (availability)
  */
 @RestController
 @RequestMapping("/admin/outlets")
@@ -146,6 +148,22 @@ public class AdminOutletController {
         log.info("Admin deactivate outlet: {}", id);
         OutletAdminDetailDTO outlet = outletService.deactivateOutletAdmin(id);
         return ResponseEntity.ok(ApiResponse.success(outlet, "Outlet deactivated"));
+    }
+
+    @PostMapping("/{id}/open")
+    @Operation(summary = "Open outlet (Admin)")
+    public ResponseEntity<ApiResponse<OutletAdminDetailDTO>> openOutlet(@PathVariable Long id) {
+        log.info("Admin open outlet: {}", id);
+        OutletAdminDetailDTO outlet = outletService.openOutletAdmin(id);
+        return ResponseEntity.ok(ApiResponse.success(outlet, "Outlet opened"));
+    }
+
+    @PostMapping("/{id}/close")
+    @Operation(summary = "Close outlet (Admin)")
+    public ResponseEntity<ApiResponse<OutletAdminDetailDTO>> closeOutlet(@PathVariable Long id) {
+        log.info("Admin close outlet: {}", id);
+        OutletAdminDetailDTO outlet = outletService.closeOutletAdmin(id);
+        return ResponseEntity.ok(ApiResponse.success(outlet, "Outlet closed"));
     }
 
     // =====================

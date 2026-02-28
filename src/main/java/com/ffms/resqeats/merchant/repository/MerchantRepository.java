@@ -44,6 +44,12 @@ public interface MerchantRepository extends BaseScopedRepository<Merchant>, JpaS
      */
     Page<Merchant> findByNameContainingIgnoreCase(String name, Pageable pageable);
 
+    /**
+     * Search merchants by name and status with pagination.
+     * Used for public merchant search (APPROVED only).
+     */
+    Page<Merchant> findByNameContainingIgnoreCaseAndStatus(String name, MerchantStatus status, Pageable pageable);
+
     // ============== VALIDATION METHODS ==============
 
     /**

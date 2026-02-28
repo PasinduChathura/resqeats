@@ -2,6 +2,7 @@ package com.ffms.resqeats.outlet.dto.merchant;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ffms.resqeats.outlet.dto.common.OperatingHoursDto;
+import com.ffms.resqeats.outlet.enums.OutletAvailabilityStatus;
 import com.ffms.resqeats.outlet.enums.OutletStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -28,6 +29,9 @@ public class OutletMerchantDetailDTO {
 
 	private String phone;
 	private OutletStatus status;
+
+	@JsonProperty("availability_status")
+	private OutletAvailabilityStatus availabilityStatus;
 
 	@JsonProperty("postal_code")
 	private String postalCode;

@@ -10,6 +10,8 @@ import com.ffms.resqeats.outlet.dto.common.OperatingHoursDto;
 import com.ffms.resqeats.outlet.dto.customer.OutletCustomerDTO;
 import com.ffms.resqeats.outlet.dto.merchant.OutletMerchantDetailDTO;
 import com.ffms.resqeats.outlet.dto.merchant.OutletMerchantListDTO;
+import com.ffms.resqeats.outlet.dto.outlet.OutletSelfDto;
+import com.ffms.resqeats.outlet.dto.outlet.UpdateMyOutletRequest;
 import com.ffms.resqeats.outlet.enums.OutletStatus;
 import com.ffms.resqeats.outlet.service.OutletService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -208,5 +210,28 @@ public class OutletController {
         log.info("Close outlet request for outletId: {}", id);
         OutletMerchantDetailDTO outlet = outletService.temporarilyCloseOutlet(id);
         return ResponseEntity.ok(ApiResponse.success(outlet, "Outlet is now closed"));
+    }
+
+    // =====================
+    // Outlet User Self-Service Endpoints
+    // =====================
+
+    @GetMapping("/outlets/me")
+    @Operation(summary = "Get my outlet (Outlet User)")
+    @PreAuthorize("hasRole('OUTLET_USER')")
+    public ResponseEntity<ApiResponse<OutletSelfDto>> getMyOutlet() {
+        log.info("Outlet user get my outlet");
+        OutletSelfDto outlet = outletService.getMyOutlet();
+        return ResponseEntity.ok(ApiResponse.success(outlet));
+    }
+
+    @PutMapping("/outlets/me")
+    @Operation(summary = "Update my outlet (Outlet User - limited fields)")
+    @PreAuthorize("hasRole('OUTLET_USER')")
+    public ResponseEntity<ApiResponse<OutletSelfDto>> updateMyOutlet(
+            @Valid @RequestBody UpdateMyOutletRequest request) {
+        log.info("Outlet user update my outlet");
+        OutletSelfDto outlet = outletService.updateMyOutlet(request);
+        return ResponseEntity.ok(ApiResponse.success(outlet, "Outlet updated"));
     }
 }

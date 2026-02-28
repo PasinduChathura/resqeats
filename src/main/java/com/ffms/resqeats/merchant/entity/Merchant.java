@@ -78,7 +78,7 @@ public class Merchant extends BaseEntity {
     @Column(name = "status", length = 20, nullable = false)
     @JsonProperty("status")
     @Builder.Default
-    private MerchantStatus status = MerchantStatus.PENDING;
+    private MerchantStatus status = MerchantStatus.PENDING_APPROVAL;
 
     @Column(name = "approved_at")
     @JsonProperty("approved_at")

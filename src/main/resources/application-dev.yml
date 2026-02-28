@@ -27,7 +27,7 @@ spring:
   # ==================== JPA Configuration ====================
   jpa:
     hibernate:
-      ddl-auto: none
+      ddl-auto: update
     show-sql: true
 
   # ==================== Redis Configuration ====================

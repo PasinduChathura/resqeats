@@ -14,8 +14,11 @@ import com.ffms.resqeats.outlet.dto.common.OperatingHoursDto;
 import com.ffms.resqeats.outlet.dto.customer.OutletCustomerDTO;
 import com.ffms.resqeats.outlet.dto.merchant.OutletMerchantDetailDTO;
 import com.ffms.resqeats.outlet.dto.merchant.OutletMerchantListDTO;
+import com.ffms.resqeats.outlet.dto.outlet.OutletSelfDto;
+import com.ffms.resqeats.outlet.dto.outlet.UpdateMyOutletRequest;
 import com.ffms.resqeats.outlet.entity.Outlet;
 import com.ffms.resqeats.outlet.entity.OutletHours;
+import com.ffms.resqeats.outlet.enums.OutletAvailabilityStatus;
 import com.ffms.resqeats.outlet.enums.OutletStatus;
 import com.ffms.resqeats.outlet.repository.OutletHoursRepository;
 import com.ffms.resqeats.outlet.repository.OutletRepository;
@@ -102,7 +105,7 @@ public class OutletService {
                 .phone(request.getPhone())
                 .email(request.getEmail())
                 .imageUrl(request.getImageUrl())
-                .status(OutletStatus.PENDING)
+                .status(OutletStatus.PENDING_APPROVAL)
                 .build();
 
         outlet = outletRepository.save(outlet);
@@ -136,6 +139,10 @@ public class OutletService {
 
         applyOutletUpdates(outlet, request);
         outlet = outletRepository.save(outlet);
+
+        if (request.getOperatingHours() != null) {
+            replaceOperatingHours(outletId, request.getOperatingHours());
+        }
         log.info("Admin updated outlet: {}", outletId);
         return toDtoAdminDetail(outlet);
     }
@@ -149,11 +156,12 @@ public class OutletService {
         log.info("Admin approving outlet: {} by admin: {}", outletId, context.getUserId());
         Outlet outlet = getOutletOrThrow(outletId);
 
-        if (outlet.getStatus() != OutletStatus.PENDING) {
+        if (outlet.getStatus() != OutletStatus.PENDING_APPROVAL) {
             throw new BusinessException("OUTLET_005", "Outlet is not pending approval");
         }
 
         outlet.setStatus(OutletStatus.ACTIVE);
+        outlet.setAvailabilityStatus(OutletAvailabilityStatus.OPEN);
         outlet = outletRepository.save(outlet);
         log.info("Outlet approved: {}", outletId);
         return toDtoAdminDetail(outlet);
@@ -186,6 +194,7 @@ public class OutletService {
         Outlet outlet = getOutletOrThrow(outletId);
 
         outlet.setStatus(OutletStatus.ACTIVE);
+        outlet.setAvailabilityStatus(OutletAvailabilityStatus.OPEN);
         outlet = outletRepository.save(outlet);
         log.info("Admin activated outlet: {}", outletId);
         return toDtoAdminDetail(outlet);
@@ -200,11 +209,57 @@ public class OutletService {
         log.info("Admin deactivating outlet: {} by admin: {}", outletId, context.getUserId());
         Outlet outlet = getOutletOrThrow(outletId);
 
-        outlet.setStatus(OutletStatus.INACTIVE);
+        outlet.setStatus(OutletStatus.DISABLED);
+        outlet.setAvailabilityStatus(OutletAvailabilityStatus.CLOSED);
         outlet = outletRepository.save(outlet);
 
         webSocketService.broadcastOutletStatusChange(outletId, false);
         log.info("Admin deactivated outlet: {}", outletId);
+        return toDtoAdminDetail(outlet);
+    }
+
+    /**
+     * Manually closes an outlet (Admin only) - stops accepting new orders.
+     *
+     * <p>This does not change the outlet lifecycle status. It toggles the operational
+     * availability flag used alongside operating hours to compute {@code is_open}.</p>
+     */
+    @Transactional
+    public OutletAdminDetailDTO closeOutletAdmin(Long outletId) {
+        var context = SecurityContextHolder.getContext();
+        log.info("Admin closing outlet: {} by admin: {}", outletId, context.getUserId());
+
+        Outlet outlet = getOutletOrThrow(outletId);
+        if (outlet.getStatus() != OutletStatus.ACTIVE) {
+            throw new BusinessException("OUTLET_003", "Only active outlets can be closed");
+        }
+
+        outlet.setAvailabilityStatus(OutletAvailabilityStatus.CLOSED);
+        outlet = outletRepository.save(outlet);
+
+        webSocketService.broadcastOutletStatusChange(outletId, false);
+        log.info("Admin closed outlet: {}", outletId);
+        return toDtoAdminDetail(outlet);
+    }
+
+    /**
+     * Manually opens an outlet (Admin only) - resumes accepting new orders.
+     */
+    @Transactional
+    public OutletAdminDetailDTO openOutletAdmin(Long outletId) {
+        var context = SecurityContextHolder.getContext();
+        log.info("Admin opening outlet: {} by admin: {}", outletId, context.getUserId());
+
+        Outlet outlet = getOutletOrThrow(outletId);
+        if (outlet.getStatus() != OutletStatus.ACTIVE) {
+            throw new BusinessException("OUTLET_003", "Only active outlets can be opened");
+        }
+
+        outlet.setAvailabilityStatus(OutletAvailabilityStatus.OPEN);
+        outlet = outletRepository.save(outlet);
+
+        webSocketService.broadcastOutletStatusChange(outletId, isCurrentlyOpen(outletId));
+        log.info("Admin opened outlet: {}", outletId);
         return toDtoAdminDetail(outlet);
     }
 
@@ -310,7 +365,7 @@ public class OutletService {
                 .phone(request.getPhone())
                 .email(request.getEmail())
                 .imageUrl(request.getImageUrl())
-                .status(OutletStatus.PENDING)
+                .status(OutletStatus.PENDING_APPROVAL)
                 .build();
 
         outlet = outletRepository.save(outlet);
@@ -367,6 +422,64 @@ public class OutletService {
         }
 
         return outlets.stream().map(this::toLookupDto);
+    }
+
+    // =====================
+    // Outlet User Self-Service
+    // =====================
+
+    /**
+     * Gets the current outlet user's assigned outlet.
+     *
+     * @return the outlet as a self DTO
+     * @throws BusinessException with code OUTLET_004 if user is not assigned to an outlet
+     */
+    public OutletSelfDto getMyOutlet() {
+        var context = SecurityContextHolder.getContext();
+        log.info("Outlet user getting their outlet: {}", context.getUserId());
+
+        if (context.getOutletId() == null) {
+            throw new BusinessException("OUTLET_004", "User is not assigned to any outlet");
+        }
+
+        Outlet outlet = getOutletOrThrow(context.getOutletId());
+        return toDtoSelf(outlet);
+    }
+
+    /**
+     * Updates the current outlet user's assigned outlet with limited fields.
+     * Outlet users can only update: description, phone, email, image_url, operating_hours.
+     *
+     * @param request the update request with limited fields
+     * @return the updated outlet as a self DTO
+     * @throws BusinessException with code OUTLET_004 if user is not assigned to an outlet
+     */
+    @Transactional
+    public OutletSelfDto updateMyOutlet(UpdateMyOutletRequest request) {
+        var context = SecurityContextHolder.getContext();
+        log.info("Outlet user updating their outlet: {}", context.getUserId());
+
+        if (context.getOutletId() == null) {
+            throw new BusinessException("OUTLET_004", "User is not assigned to any outlet");
+        }
+
+        Outlet outlet = getOutletOrThrow(context.getOutletId());
+
+        // Apply only the allowed updates for outlet users
+        if (request.getDescription() != null) outlet.setDescription(request.getDescription());
+        if (request.getPhone() != null) outlet.setPhone(request.getPhone());
+        if (request.getEmail() != null) outlet.setEmail(request.getEmail());
+        if (request.getImageUrl() != null) outlet.setImageUrl(request.getImageUrl());
+
+        outlet = outletRepository.save(outlet);
+
+        // Update operating hours if provided
+        if (request.getOperatingHours() != null) {
+            replaceOperatingHours(outlet.getId(), request.getOperatingHours());
+        }
+
+        log.info("Outlet user updated outlet: {}", outlet.getId());
+        return toDtoSelf(outlet);
     }
 
     // =====================
@@ -443,6 +556,10 @@ public class OutletService {
         }
 
         outlet = outletRepository.save(outlet);
+
+        if (request.getOperatingHours() != null) {
+            replaceOperatingHours(outletId, request.getOperatingHours());
+        }
         log.info("Outlet updated successfully: {}", outletId);
         return toDtoMerchantDetail(outlet);
     }
@@ -467,23 +584,29 @@ public class OutletService {
         Outlet outlet = getOutletOrThrow(outletId);
         validateOutletAccess(outlet);
 
-        log.debug("Deleting existing operating hours for outlet: {}", outletId);
-        outletHoursRepository.deleteByOutletId(outletId);
-
-        log.debug("Creating {} new operating hours entries for outlet: {}", hoursRequest.size(), outletId);
-        for (OperatingHoursDto hours : hoursRequest) {
-            OutletHours outletHours = OutletHours.builder()
-                    .outletId(outletId)
-                    .dayOfWeek(mapDayOfWeek(hours.getDayOfWeek()))
-                    .openTime(hours.getOpenTime())
-                    .closeTime(hours.getCloseTime())
-                    .isClosed(hours.getIsClosed() != null ? hours.getIsClosed() : false)
-                    .build();
-            outletHoursRepository.save(outletHours);
-        }
+        replaceOperatingHours(outletId, hoursRequest);
 
         log.info("Operating hours set successfully for outlet: {}", outletId);
         return toDtoMerchantDetail(outlet);
+    }
+
+    private void replaceOperatingHours(Long outletId, List<OperatingHoursDto> hoursRequest) {
+        if (hoursRequest == null) return;
+
+        log.debug("Replacing operating hours for outlet: {} ({} entries)", outletId, hoursRequest.size());
+        outletHoursRepository.deleteByOutletId(outletId);
+
+        List<OutletHours> newHours = hoursRequest.stream()
+                .map(hours -> OutletHours.builder()
+                        .outletId(outletId)
+                        .dayOfWeek(mapDayOfWeek(hours.getDayOfWeek()))
+                        .openTime(hours.getOpenTime())
+                        .closeTime(hours.getCloseTime())
+                        .isClosed(hours.getIsClosed() != null ? hours.getIsClosed() : false)
+                        .build())
+                .collect(Collectors.toList());
+
+        outletHoursRepository.saveAll(newHours);
     }
 
     /**
@@ -513,6 +636,7 @@ public class OutletService {
         }
 
         outlet.setStatus(OutletStatus.ACTIVE);
+        outlet.setAvailabilityStatus(OutletAvailabilityStatus.OPEN);
         outlet = outletRepository.save(outlet);
 
         log.info("Outlet activated successfully: {}", outletId);
@@ -538,7 +662,8 @@ public class OutletService {
         Outlet outlet = getOutletOrThrow(outletId);
         validateOutletAccess(outlet);
 
-        outlet.setStatus(OutletStatus.INACTIVE);
+        outlet.setStatus(OutletStatus.DISABLED);
+        outlet.setAvailabilityStatus(OutletAvailabilityStatus.CLOSED);
         outlet = outletRepository.save(outlet);
 
         webSocketService.broadcastOutletStatusChange(outletId, false);
@@ -549,15 +674,10 @@ public class OutletService {
     }
 
     /**
-     * Temporarily closes an outlet.
+     * Manually closes an outlet (stop accepting new orders).
      *
-     * <p>Changes outlet status to TEMPORARILY_CLOSED and broadcasts the status
-     * change via WebSocket. The outlet can be reopened later using {@link #reopenOutlet}.</p>
-     *
-     * @param outletId the unique identifier of the outlet to temporarily close
-     * @return the temporarily closed outlet as a DTO
-     * @throws BusinessException with code OUTLET_004 if outlet is not found
-     * @throws BusinessException with code AUTH_003 if user is not authorized
+     * <p>This does not change the outlet lifecycle status. It toggles the operational
+     * availability flag used alongside operating hours to compute {@code is_open}.</p>
      */
     @Transactional
     public OutletMerchantDetailDTO temporarilyCloseOutlet(Long outletId) {
@@ -567,27 +687,22 @@ public class OutletService {
         Outlet outlet = getOutletOrThrow(outletId);
         validateOutletAccess(outlet);
 
-        outlet.setStatus(OutletStatus.TEMPORARILY_CLOSED);
+        if (outlet.getStatus() != OutletStatus.ACTIVE) {
+            throw new BusinessException("OUTLET_003", "Only active outlets can be closed");
+        }
+
+        outlet.setAvailabilityStatus(OutletAvailabilityStatus.CLOSED);
         outlet = outletRepository.save(outlet);
 
         webSocketService.broadcastOutletStatusChange(outletId, false);
         log.debug("WebSocket notification sent for outlet temporary closure: {}", outletId);
 
-        log.info("Outlet temporarily closed successfully: {}", outletId);
+        log.info("Outlet closed successfully: {}", outletId);
         return toDtoMerchantDetail(outlet);
     }
 
     /**
-     * Reopens a temporarily closed outlet.
-     *
-     * <p>Changes outlet status from TEMPORARILY_CLOSED back to ACTIVE and broadcasts
-     * the status change via WebSocket to notify connected clients.</p>
-     *
-     * @param outletId the unique identifier of the outlet to reopen
-     * @return the reopened outlet as a DTO
-     * @throws BusinessException with code OUTLET_004 if outlet is not found
-     * @throws BusinessException with code AUTH_003 if user is not authorized
-     * @throws BusinessException with code OUTLET_003 if outlet is not temporarily closed
+     * Manually opens an outlet (resume accepting new orders).
      */
     @Transactional
     public OutletMerchantDetailDTO reopenOutlet(Long outletId) {
@@ -597,19 +712,17 @@ public class OutletService {
         Outlet outlet = getOutletOrThrow(outletId);
         validateOutletAccess(outlet);
 
-        if (outlet.getStatus() != OutletStatus.TEMPORARILY_CLOSED) {
-            log.warn("Reopen failed for outlet: {} - current status is {} (expected TEMPORARILY_CLOSED)",
-                    outletId, outlet.getStatus());
-            throw new BusinessException("OUTLET_003", "Outlet is not temporarily closed");
+        if (outlet.getStatus() != OutletStatus.ACTIVE) {
+            throw new BusinessException("OUTLET_003", "Only active outlets can be opened");
         }
 
-        outlet.setStatus(OutletStatus.ACTIVE);
+        outlet.setAvailabilityStatus(OutletAvailabilityStatus.OPEN);
         outlet = outletRepository.save(outlet);
 
-        webSocketService.broadcastOutletStatusChange(outletId, true);
+        webSocketService.broadcastOutletStatusChange(outletId, isCurrentlyOpen(outletId));
         log.debug("WebSocket notification sent for outlet reopen: {}", outletId);
 
-        log.info("Outlet reopened successfully: {}", outletId);
+        log.info("Outlet opened successfully: {}", outletId);
         return toDtoMerchantDetail(outlet);
     }
 
@@ -633,6 +746,11 @@ public class OutletService {
 
         if (outlet.getStatus() != OutletStatus.ACTIVE) {
             log.debug("Outlet {} is not active, current status: {}", outletId, outlet.getStatus());
+            return false;
+        }
+
+        if (outlet.getAvailabilityStatus() != OutletAvailabilityStatus.OPEN) {
+            log.debug("Outlet {} is manually closed, availability status: {}", outletId, outlet.getAvailabilityStatus());
             return false;
         }
 
@@ -757,6 +875,7 @@ public class OutletService {
         if (request.getPhone() != null) outlet.setPhone(request.getPhone());
         if (request.getEmail() != null) outlet.setEmail(request.getEmail());
         if (request.getImageUrl() != null) outlet.setImageUrl(request.getImageUrl());
+        if (request.getMerchantId() != null) outlet.setMerchantId(request.getMerchantId());
 
         if (request.getLatitude() != null && request.getLongitude() != null) {
             outlet.setLatitude(request.getLatitude());
@@ -808,6 +927,7 @@ public class OutletService {
                 .merchantName(merchant != null ? merchant.getName() : null)
                 .merchantLogoUrl(merchant != null ? merchant.getLogoUrl() : null)
                 .status(outlet.getStatus())
+                .availabilityStatus(outlet.getAvailabilityStatus())
                 .address(outlet.getAddress())
                 .itemCount(getItemCount(outlet.getId()))
                 .isOpen(isCurrentlyOpen(outlet.getId()))
@@ -826,6 +946,7 @@ public class OutletService {
                 .longitude(outlet.getLongitude())
                 .phone(outlet.getPhone())
                 .status(outlet.getStatus())
+                .availabilityStatus(outlet.getAvailabilityStatus())
                 .merchantId(outlet.getMerchantId())
                 .postalCode(outlet.getPostalCode())
                 .isOpen(isCurrentlyOpen(outlet.getId()))
@@ -841,6 +962,7 @@ public class OutletService {
                 .name(outlet.getName())
                 .phone(outlet.getPhone())
                 .status(outlet.getStatus())
+                .availabilityStatus(outlet.getAvailabilityStatus())
                 .address(outlet.getAddress())
                 .itemCount(getItemCount(outlet.getId()))
                 .isOpen(isCurrentlyOpen(outlet.getId()))
@@ -859,6 +981,7 @@ public class OutletService {
                 .longitude(outlet.getLongitude())
                 .phone(outlet.getPhone())
                 .status(outlet.getStatus())
+                .availabilityStatus(outlet.getAvailabilityStatus())
                 .postalCode(outlet.getPostalCode())
                 .isOpen(isCurrentlyOpen(outlet.getId()))
                 .averageRating(outlet.getAverageRating())
@@ -875,8 +998,31 @@ public class OutletService {
                 .address(outlet.getAddress())
                 .merchantName(merchant != null ? merchant.getName() : null)
                 .merchantLogoUrl(merchant != null ? merchant.getLogoUrl() : null)
+                .availabilityStatus(outlet.getAvailabilityStatus())
                 .isOpen(isCurrentlyOpen(outlet.getId()))
                 .averageRating(outlet.getAverageRating())
+                .build();
+    }
+
+    private OutletSelfDto toDtoSelf(Outlet outlet) {
+        return OutletSelfDto.builder()
+                .id(outlet.getId())
+                .name(outlet.getName())
+                .description(outlet.getDescription())
+                .address(outlet.getAddress())
+                .city(outlet.getCity())
+                .postalCode(outlet.getPostalCode())
+                .latitude(outlet.getLatitude())
+                .longitude(outlet.getLongitude())
+                .phone(outlet.getPhone())
+                .email(outlet.getEmail())
+                .status(outlet.getStatus())
+                .availabilityStatus(outlet.getAvailabilityStatus())
+                .imageUrl(outlet.getImageUrl())
+                .isOpen(isCurrentlyOpen(outlet.getId()))
+                .averageRating(outlet.getAverageRating())
+                .totalRatings(outlet.getTotalRatings())
+                .operatingHours(toOperatingHoursDtos(outlet.getId()))
                 .build();
     }
 

@@ -8,7 +8,7 @@ public enum MerchantStatus {
     /**
      * Merchant registration is pending admin review.
      */
-    PENDING,
+    PENDING_APPROVAL,
 
     /**
      * Merchant is approved and can operate.
@@ -20,6 +20,11 @@ public enum MerchantStatus {
      * BR-018: Suspended merchants cannot process new orders.
      */
     SUSPENDED,
+
+    /**
+     * Merchant is disabled (soft-deactivated) and cannot operate.
+     */
+    DISABLED,
 
     /**
      * Merchant registration was rejected.

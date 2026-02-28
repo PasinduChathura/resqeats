@@ -1,6 +1,7 @@
 package com.ffms.resqeats.geo.service;
 
 import com.ffms.resqeats.outlet.entity.Outlet;
+import com.ffms.resqeats.outlet.enums.OutletAvailabilityStatus;
 import com.ffms.resqeats.outlet.enums.OutletStatus;
 import com.ffms.resqeats.outlet.repository.OutletRepository;
 import lombok.RequiredArgsConstructor;
@@ -114,7 +115,8 @@ public class GeoService {
                             .latitude(outlet.getLatitude().doubleValue())
                             .longitude(outlet.getLongitude().doubleValue())
                             .distanceKm(d)
-                            .isOpen(outlet.getStatus() == OutletStatus.ACTIVE)
+                            .isOpen(outlet.getStatus() == OutletStatus.ACTIVE
+                                && outlet.getAvailabilityStatus() == OutletAvailabilityStatus.OPEN)
                             .build());
                 }
             }
@@ -143,7 +145,7 @@ public class GeoService {
                             .latitude(outlet.getLatitude() != null ? outlet.getLatitude().doubleValue() : null)
                             .longitude(outlet.getLongitude() != null ? outlet.getLongitude().doubleValue() : null)
                             .distanceKm(distanceKm)
-                            .isOpen(outlet.getStatus() == OutletStatus.ACTIVE)
+                            .isOpen(outlet.getAvailabilityStatus() == OutletAvailabilityStatus.OPEN)
                             .build());
                     log.debug("Added active outlet {} to results", outlet.getId());
                 } else {

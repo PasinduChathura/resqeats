@@ -1,6 +1,7 @@
 package com.ffms.resqeats.outlet.dto.customer;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.ffms.resqeats.outlet.enums.OutletAvailabilityStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -22,6 +23,9 @@ public class OutletCustomerDTO {
 
 	@JsonProperty("merchant_logo_url")
 	private String merchantLogoUrl;
+
+	@JsonProperty("availability_status")
+	private OutletAvailabilityStatus availabilityStatus;
 
 	@JsonProperty("is_open")
 	private Boolean isOpen;

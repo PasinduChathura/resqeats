@@ -82,7 +82,7 @@ public class MerchantService {
                 .contactPhone(request.getContactPhone())
                 .website(request.getWebsite())
                 .logoUrl(request.getLogoUrl())
-                .status(MerchantStatus.PENDING)
+                .status(MerchantStatus.PENDING_APPROVAL)
                 .build();
 
         return mapToAdminDto(merchantRepository.save(merchant));
@@ -98,7 +98,7 @@ public class MerchantService {
 
         Merchant merchant = findMerchantOrThrow(merchantId);
 
-        if (merchant.getStatus() != MerchantStatus.PENDING) {
+        if (merchant.getStatus() != MerchantStatus.PENDING_APPROVAL) {
             throw new BusinessException("MERCH_003",
                     "Cannot approve merchant. Current status: " + merchant.getStatus());
         }
@@ -121,7 +121,7 @@ public class MerchantService {
 
         Merchant merchant = findMerchantOrThrow(merchantId);
 
-        if (merchant.getStatus() != MerchantStatus.PENDING) {
+        if (merchant.getStatus() != MerchantStatus.PENDING_APPROVAL) {
             throw new BusinessException("MERCH_003",
                     "Cannot reject merchant. Current status: " + merchant.getStatus());
         }
@@ -154,6 +154,58 @@ public class MerchantService {
         merchant.setSuspensionReason(reason);
 
         log.info("Merchant suspended: {} - reason: {}", merchantId, reason);
+        return mapToAdminDto(merchantRepository.save(merchant));
+    }
+
+    /**
+     * Disables (soft-deactivates) a merchant (Admin only).
+     *
+     * <p>Disabled merchants are treated as non-operational and will not appear in public discovery.
+     * This is used as a safer alternative to hard-deleting merchants.</p>
+     */
+    @Transactional
+    public void disableMerchant(Long merchantId) {
+        var context = SecurityContextHolder.getContext();
+        log.info("Admin disabling merchant: {} by user: {}", merchantId, context.getUserId());
+
+        Merchant merchant = findMerchantOrThrow(merchantId);
+        if (merchant.getStatus() == MerchantStatus.DISABLED) {
+            log.info("Merchant already disabled: {}", merchantId);
+            return;
+        }
+
+        merchant.setStatus(MerchantStatus.DISABLED);
+        merchantRepository.save(merchant);
+        log.info("Merchant disabled: {}", merchantId);
+    }
+
+    /**
+     * Re-enables a disabled merchant (Admin only).
+     *
+     * <p>Moves the merchant back to APPROVED so they can operate again.</p>
+     */
+    @Transactional
+    public MerchantAdminDto enableMerchant(Long merchantId) {
+        var context = SecurityContextHolder.getContext();
+        log.info("Admin enabling merchant: {} by user: {}", merchantId, context.getUserId());
+
+        Merchant merchant = findMerchantOrThrow(merchantId);
+        if (merchant.getStatus() == MerchantStatus.APPROVED) {
+            return mapToAdminDto(merchant);
+        }
+
+        if (merchant.getStatus() != MerchantStatus.DISABLED) {
+            throw new BusinessException(
+                    "MERCH_003",
+                    "Cannot enable merchant. Current status: " + merchant.getStatus()
+            );
+        }
+
+        merchant.setStatus(MerchantStatus.APPROVED);
+        merchant.setApprovedAt(LocalDateTime.now());
+        merchant.setApprovedBy(context.getUserId());
+
+        log.info("Merchant enabled: {}", merchantId);
         return mapToAdminDto(merchantRepository.save(merchant));
     }
 
@@ -227,7 +279,12 @@ public class MerchantService {
      */
     public MerchantCustomerDto getPublicMerchantById(Long merchantId) {
         log.debug("Getting public merchant by ID: {}", merchantId);
-        return mapToCustomerDetailDto(findMerchantOrThrow(merchantId));
+        Merchant merchant = findMerchantOrThrow(merchantId);
+        // Public discovery only exposes APPROVED merchants.
+        if (merchant.getStatus() != MerchantStatus.APPROVED) {
+            throw new BusinessException("MERCH_004", "Merchant not found");
+        }
+        return mapToCustomerDetailDto(merchant);
     }
 
     /**
@@ -281,7 +338,7 @@ public class MerchantService {
     public Page<MerchantCustomerListDto> searchMerchants(String query, Pageable pageable) {
         log.debug("Searching merchants with query: {}", query);
         return merchantRepository
-                .findByNameContainingIgnoreCase(query, pageable)
+            .findByNameContainingIgnoreCaseAndStatus(query, MerchantStatus.APPROVED, pageable)
                 .map(this::mapToCustomerSummaryDto);
     }
 

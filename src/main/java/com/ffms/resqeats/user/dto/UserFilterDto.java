@@ -24,7 +24,7 @@ public class UserFilterDto {
     @Schema(description = "Filter by user role (ADMIN, MERCHANT, OUTLET_USER, USER)")
     private UserRole role;
 
-    @Schema(description = "Filter by user status (ACTIVE, SUSPENDED, DELETED)")
+    @Schema(description = "Filter by user status (ACTIVE, SUSPENDED, DISABLED)")
     private UserStatus status;
 
     @Schema(description = "Search in email, phone, first name, or last name")

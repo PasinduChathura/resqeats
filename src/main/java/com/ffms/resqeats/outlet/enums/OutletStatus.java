@@ -5,9 +5,9 @@ package com.ffms.resqeats.outlet.enums;
  */
 public enum OutletStatus {
     /**
-     * Legacy/primary pending status used in seed data and API filters.
+     * Outlet is pending approval.
      */
-    PENDING,
+    PENDING_APPROVAL,
 
     /**
      * Outlet is operational and can accept orders.
@@ -15,17 +15,12 @@ public enum OutletStatus {
     ACTIVE,
 
     /**
-     * Outlet is temporarily closed (vacation, maintenance).
-     */
-    TEMPORARILY_CLOSED,
-
-    /**
      * Outlet is suspended by admin action.
      */
     SUSPENDED,
 
     /**
-     * Legacy inactive status used in seed data.
+     * Outlet is disabled and hidden from customers.
      */
-    INACTIVE
+    DISABLED
 }
